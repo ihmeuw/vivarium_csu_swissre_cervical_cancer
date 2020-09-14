@@ -44,21 +44,28 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         project_globals.POPULATION.DEMOGRAPHY: load_demographic_dimensions,
         project_globals.POPULATION.TMRLE: load_theoretical_minimum_risk_life_expectancy,
         project_globals.POPULATION.ACMR: load_standard_data,
-
-        # TODO - add appropriate mappings
-        # project_globals.DIARRHEA_PREVALENCE: load_standard_data,
-        # project_globals.DIARRHEA_INCIDENCE_RATE: load_standard_data,
-        # project_globals.DIARRHEA_REMISSION_RATE: load_standard_data,
-        # project_globals.DIARRHEA_CAUSE_SPECIFIC_MORTALITY_RATE: load_standard_data,
-        # project_globals.DIARRHEA_EXCESS_MORTALITY_RATE: load_standard_data,
-        # project_globals.DIARRHEA_DISABILITY_WEIGHT: load_standard_data,
-        # project_globals.DIARRHEA_RESTRICTIONS: load_metadata,
     }
     return mapping[lookup_key](lookup_key, location)
 
 
 def load_population_structure(key: str, location: str) -> pd.DataFrame:
-    return interface.get_population_structure(location)
+    def get_row(sex, year):
+        return {
+            'location': location,
+            'sex': sex,
+            'age_start': 0,
+            'age_end': 95,
+            'year_start': year,
+            'year_end': year + 1,
+            'value': 100,
+        }
+
+    # TODO there is an issue in vivarium_public_health.population.data_transformations.assign_demographic_proportions()
+    #   where this fails if there is only one provided year
+    return pd.DataFrame([
+        get_row('Female', 2019),
+        get_row('Female', 2020)
+    ]).set_index(['location', 'sex', 'age_start', 'age_end', 'year_start', 'year_end'])
 
 
 def load_age_bins(key: str, location: str) -> pd.DataFrame:
@@ -66,7 +73,16 @@ def load_age_bins(key: str, location: str) -> pd.DataFrame:
 
 
 def load_demographic_dimensions(key: str, location: str) -> pd.DataFrame:
-    return interface.get_demographic_dimensions(location)
+    return pd.DataFrame([
+        {
+            'location': location,
+            'sex': 'Female',
+            'age_start': 0,
+            'age_end': 95,
+            'year_start': 2019,
+            'year_end': 2020,
+        },
+    ]).set_index(['location', 'sex', 'age_start', 'age_end', 'year_start', 'year_end'])
 
 
 def load_theoretical_minimum_risk_life_expectancy(key: str, location: str) -> pd.DataFrame:

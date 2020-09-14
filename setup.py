@@ -33,6 +33,7 @@ if __name__ == "__main__":
 
     # use "pip install -e .[dev]" to install required components + extra components
     extras_require = [
+        'vivarium-gbd-access>=2.0.2',
         'vivarium_cluster_tools==1.2.0',
         'vivarium_inputs[data]==3.1.1',
     ]
