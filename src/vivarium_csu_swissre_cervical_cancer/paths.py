@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import vivarium_csu_swissre_cervical_cancer
 import vivarium_csu_swissre_cervical_cancer.globals as project_globals
 
 BASE_DIR = Path(vivarium_csu_swissre_cervical_cancer.__file__).resolve().parent
