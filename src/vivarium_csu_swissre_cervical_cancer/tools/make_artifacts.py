@@ -41,7 +41,8 @@ def build_artifacts(location: str, output_dir: str, append: bool, verbose: int):
         How noisy the logger should be.
     """
     output_dir = Path(output_dir)
-    vct.mkdir(output_dir, parents=True, exist_ok=True)
+    # TODO: fix this so it doesn't have to have manual dir creation
+    vct.mkdir(output_dir, parents=True, exists_ok=True)
 
     if location in project_globals.LOCATIONS:
         path = Path(output_dir) / f'{sanitize_location(location)}.hdf'
