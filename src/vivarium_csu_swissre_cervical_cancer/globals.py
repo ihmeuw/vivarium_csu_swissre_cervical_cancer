@@ -22,13 +22,11 @@ LOCATIONS = [
 
 SWISSRE_LOCATION_WEIGHTS = {
     # TODO: Determine weights (below are from BC)
-    '''
     'Tianjin': 0.18,
     'Jiangsu': 0.28,
-    'Guangdong': 0.24,
-    'Henan': 0.17,
+    'Guangdong': 0.22,
+    'Henan': 0.16,
     'Heilongjiang': 0.16,
-    '''
 }
 
 #############
