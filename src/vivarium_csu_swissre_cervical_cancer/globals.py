@@ -1,13 +1,14 @@
 import itertools
-
 from typing import NamedTuple
+
+from vivarium_public_health.utilities import TargetString
 
 ####################
 # Project metadata #
 ####################
 
 PROJECT_NAME = 'vivarium_csu_swissre_cervical_cancer'
-CLUSTER_PROJECT = 'proj_cost_effect'
+CLUSTER_PROJECT = 'proj_csu'
 
 CLUSTER_QUEUE = 'all.q'
 MAKE_ARTIFACT_MEM = '10G'
@@ -16,8 +17,29 @@ MAKE_ARTIFACT_RUNTIME = '3:00:00'
 MAKE_ARTIFACT_SLEEP = 10
 
 LOCATIONS = [
-    # TODO - project locations here
+    'SwissRE Coverage',
 ]
+
+SWISSRE_LOCATION_WEIGHTS = {
+    # TODO: Determine weights (below are from BC)
+    'Tianjin': 0.18,
+    'Jiangsu': 0.28,
+    'Guangdong': 0.22,
+    'Henan': 0.16,
+    'Heilongjiang': 0.16,
+}
+
+#############
+# Scenarios #
+#############
+# TODO - add scenarios to research template
+
+class __Scenarios(NamedTuple):
+    baseline: str = 'baseline'
+    alternative: str = 'alternative'
+
+
+SCENARIOS = __Scenarios()
 
 
 #############
@@ -49,32 +71,40 @@ POPULATION = __Population()
 # TODO - sample key group used to idneitfy keys in model
 # For more information see the tutorial:
 # https://vivarium-inputs.readthedocs.io/en/latest/tutorials/pulling_data.html#entity-measure-data
-class __IHD(NamedTuple):
-    ACUTE_MI_PREVALENCE: str = 'sequela.acute_myocardial_infarction.prevalence'
-    POST_MI_PREVALENCE: str = 'sequela.post_myocardial_infarction.prevalence'
-    ACUTE_MI_INCIDENCE_RATE: str = 'cause.ischemic_heart_disease.incidence_rate'
-    ACUTE_MI_DISABILITY_WEIGHT: str = 'sequela.acute_myocardial_infarction.disability_weight'
-    POST_MI_DISABILITY_WEIGHT: str = 'sequela.post_myocardial_infarction.disability_weight'
-    ACUTE_MI_EMR: str = 'sequela.acute_myocardial_infarction.excess_mortality_rate'
-    POST_MI_EMR: str = 'sequela.post_myocardial_infarction.excess_mortality_rate'
-    CSMR: str = 'cause.ischemic_heart_disease.cause_specific_mortality_rate'
-    RESTRICTIONS: str = 'cause.ischemic_heart_disease.restrictions'
+class __CervicalCancer(NamedTuple):
+    # TODO - update below for cervical cancer (from BC)
+    LCIS_PREVALENCE: TargetString = TargetString('sequela.lobular_carcinoma_in_situ.prevalence')
+    DCIS_PREVALENCE: TargetString = TargetString('sequela.ductal_carcinoma_in_situ.prevalence')
+    PREVALENCE: TargetString = TargetString('cause.breast_cancer.prevalence')
+    LCIS_INCIDENCE_RATE: TargetString = TargetString('sequela.lobular_carcinoma_in_situ.incidence_rate')
+    DCIS_INCIDENCE_RATE: TargetString = TargetString('sequela.ductal_carcinoma_in_situ.incidence_rate')
+    INCIDENCE_RATE: TargetString = TargetString('cause.breast_cancer.incidence_rate')
+    LCIS_BREAST_CANCER_TRANSITION_RATE: TargetString = TargetString('sequela.lobular_carcinoma_in_situ.transition_rate')
+    DCIS_BREAST_CANCER_TRANSITION_RATE: TargetString = TargetString('sequela.ductal_carcinoma_in_situ.transition_rate')
+    DISABILITY_WEIGHT: TargetString = TargetString('cause.breast_cancer.disability_weight')
+    EMR: TargetString = TargetString('cause.breast_cancer.excess_mortality_rate')
+    CSMR: TargetString = TargetString('cause.breast_cancer.cause_specific_mortality_rate')
+    RESTRICTIONS: TargetString = TargetString('cause.breast_cancer.restrictions')
 
+    LCIS_PREVALENCE_RATIO = TargetString('sequela.lobular_carcinoma_in_situ.prevalence_ratio')
+    DCIS_PREVALENCE_RATIO = TargetString('sequela.ductal_carcinoma_in_situ.prevalence_ratio')
+
+    REMISSION_RATE_VALUE = 0.1
     @property
     def name(self):
-        return 'ischemic_heart_disease'
+        return 'cervical_cancer'
 
     @property
     def log_name(self):
-        return 'ischemic heart disease'
+        return 'cervical cancer'
 
 
-IHD = __IHD()
+CERVICAL_CANCER = __CervicalCancer()
 
 
 MAKE_ARTIFACT_KEY_GROUPS = [
     POPULATION,
-    IHD,
+    #CERVICAL_CANCER
 ]
 
 
@@ -93,32 +123,47 @@ class TransitionString(str):
 
 
 # TODO input details of model states and transitions
-SOME_MODEL_NAME = 'some_model'
-SUSCEPTIBLE_STATE_NAME = f'susceptible_to_{SOME_MODEL_NAME}'
-FIRST_STATE_NAME = 'first_state'
-SECOND_STATE_NAME = 'second_state'
-IHD_MODEL_STATES = (SUSCEPTIBLE_STATE_NAME, FIRST_STATE_NAME, SECOND_STATE_NAME)
-IHD_MODEL_TRANSITIONS = (
-    TransitionString(f'{SUSCEPTIBLE_STATE_NAME}_TO_{FIRST_STATE_NAME}'),
-    TransitionString(f'{FIRST_STATE_NAME}_TO_{SECOND_STATE_NAME}'),
-    TransitionString(f'{SECOND_STATE_NAME}_TO_{FIRST_STATE_NAME}')
+CERVICAL_CANCER_MODEL_NAME = CERVICAL_CANCER.name
+SUSCEPTIBLE_STATE_NAME = f'susceptible_to_{CERVICAL_CANCER_MODEL_NAME}'
+HIGH_RISK_HPV_STATE_NAME = 'high_risk_hpv'
+BENIGN_CANCER_STATE_NAME = 'benign_cervical_cancer'
+INVASIVE_CANCER_STATE_NAME = 'invasive_cervical_cancer'
+RECOVERED_STATE_NAME = f'recovered_from_{CERVICAL_CANCER_MODEL_NAME}'
+CERVICAL_CANCER_MODEL_STATES = (
+    SUSCEPTIBLE_STATE_NAME,
+    HIGH_RISK_HPV_STATE_NAME,
+    BENIGN_CANCER_STATE_NAME,
+    INVASIVE_CANCER_STATE_NAME,
+    RECOVERED_STATE_NAME,
 )
+CERVICAL_CANCER_MODEL_TRANSITIONS = (
+    TransitionString(f'{SUSCEPTIBLE_STATE_NAME}_TO_{HIGH_RISK_HPV_STATE_NAME}'),
+    TransitionString(f'{SUSCEPTIBLE_STATE_NAME}_TO_{BENIGN_CANCER_STATE_NAME}'),
+    TransitionString(f'{BENIGN_CANCER_STATE_NAME}_TO_{INVASIVE_CANCER_STATE_NAME}'),
+    TransitionString(f'{HIGH_RISK_HPV_STATE_NAME}_TO_{BENIGN_CANCER_STATE_NAME}'),
+    TransitionString(f'{INVASIVE_CANCER_STATE_NAME}_TO_{RECOVERED_STATE_NAME}')
+)
+
+STATE_MACHINE_MAP = {
+    CERVICAL_CANCER_MODEL_NAME: {
+        'states': CERVICAL_CANCER_MODEL_STATES,
+        'transitions': CERVICAL_CANCER_MODEL_TRANSITIONS,
+    },
+    # TODO - add screening model
+    # SCREENING_RESULT_MODEL_NAME: {
+    #     'states': SCREENING_MODEL_STATES,
+    #     'transitions': SCREENING_MODEL_TRANSITIONS,
+    # }
+}
+
+# TODO - STATES & TRANSITIONS is broken in template (makes a generator instead of a tuple)
+STATES = tuple(state for model in STATE_MACHINE_MAP.values() for state in model['states'])
+TRANSITIONS = tuple(state for model in STATE_MACHINE_MAP.values() for state in model['transitions'])
 
 
 ########################
 # Risk Model Constants #
 ########################
-# TODO - remove if you don't need lbwsg
-LBWSG_MODEL_NAME = 'low_birth_weight_and_short_gestation'
-
-
-class __LBWSG_MISSING_CATEGORY(NamedTuple):
-    CAT: str = 'cat212'
-    NAME: str = 'Birth prevalence - [37, 38) wks, [1000, 1500) g'
-    EXPOSURE: float = 0.
-
-
-LBWSG_MISSING_CATEGORY = __LBWSG_MISSING_CATEGORY()
 
 
 #################################
@@ -129,10 +174,13 @@ TOTAL_POPULATION_COLUMN = 'total_population'
 TOTAL_YLDS_COLUMN = 'years_lived_with_disability'
 TOTAL_YLLS_COLUMN = 'years_of_life_lost'
 
+SCREENING_SCHEDULED = 'screening_scheduled_count'
+SCREENING_ATTENDED = 'screening_attended_count'
+
 # Columns from parallel runs
 INPUT_DRAW_COLUMN = 'input_draw'
 RANDOM_SEED_COLUMN = 'random_seed'
-OUTPUT_SCENARIO_COLUMN = 'scenario'
+OUTPUT_SCENARIO_COLUMN = 'screening_algorithm.scenario'
 
 STANDARD_COLUMNS = {
     'total_population': TOTAL_POPULATION_COLUMN,
@@ -140,13 +188,28 @@ STANDARD_COLUMNS = {
     'total_ylds': TOTAL_YLDS_COLUMN,
 }
 
+THROWAWAY_COLUMNS = [f'{state}_event_count' for state in STATES]
+
+# TODO - clean up family history from below
 TOTAL_POPULATION_COLUMN_TEMPLATE = 'total_population_{POP_STATE}'
-PERSON_TIME_COLUMN_TEMPLATE = 'person_time_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
-DEATH_COLUMN_TEMPLATE = 'death_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
-YLLS_COLUMN_TEMPLATE = 'ylls_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
-YLDS_COLUMN_TEMPLATE = 'ylds_due_to_{CAUSE_OF_DISABILITY}_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
-STATE_PERSON_TIME_COLUMN_TEMPLATE = '{STATE}_person_time_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
-TRANSITION_COUNT_COLUMN_TEMPLATE = '{TRANSITION}_event_count_in_{YEAR}_among_{SEX}_in_age_group_{AGE_GROUP}'
+PERSON_TIME_COLUMN_TEMPLATE = ('person_time_in_{YEAR}_among_{SEX}_age_cohort_{AGE_COHORT}_family_history_{HISTORY}'
+                               '_screening_result_{SCREENING_STATE}')
+DEATH_COLUMN_TEMPLATE = ('death_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_among_{SEX}_age_cohort_{AGE_COHORT}'
+                         '_family_history_{HISTORY}_screening_result_{SCREENING_STATE}')
+YLLS_COLUMN_TEMPLATE = ('ylls_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_among_{SEX}_age_cohort_{AGE_COHORT}'
+                        '_family_history_{HISTORY}_screening_result_{SCREENING_STATE}')
+YLDS_COLUMN_TEMPLATE = ('ylds_due_to_{CAUSE_OF_DISABILITY}_in_{YEAR}_among_{SEX}_age_cohort_{AGE_COHORT}'
+                        '_family_history_{HISTORY}')
+DISEASE_STATE_PERSON_TIME_COLUMN_TEMPLATE = ('{DISEASE_STATE}_person_time_in_{YEAR}_among_{SEX}_age_cohort_{AGE_COHORT}'
+                                             '_family_history_{HISTORY}_screening_result_{SCREENING_STATE}')
+SCREENING_STATE_PERSON_TIME_COLUMN_TEMPLATE = ('{SCREENING_STATE}_person_time_in_{YEAR}_among_{SEX}'
+                                               '_age_cohort_{AGE_COHORT}_family_history_{HISTORY}')
+DISEASE_TRANSITION_COUNT_COLUMN_TEMPLATE = ('{DISEASE_TRANSITION}_event_count_in_{YEAR}_among_{SEX}'
+                                            '_age_cohort_{AGE_COHORT}_family_history_{HISTORY}'
+                                            '_screening_result_{SCREENING_STATE}')
+SCREENING_TRANSITION_COUNT_COLUMN_TEMPLATE = ('{SCREENING_TRANSITION}_event_count_in_{YEAR}_among_{SEX}'
+                                              '_age_cohort_{AGE_COHORT}_family_history_{HISTORY}')
+EVENT_COUNT_COLUMN_TEMPLATE = '{EVENT}_in_{YEAR}_among_{SEX}_age_cohort_{AGE_COHORT}_family_history_{HISTORY}'
 
 COLUMN_TEMPLATES = {
     'population': TOTAL_POPULATION_COLUMN_TEMPLATE,
@@ -154,37 +217,36 @@ COLUMN_TEMPLATES = {
     'deaths': DEATH_COLUMN_TEMPLATE,
     'ylls': YLLS_COLUMN_TEMPLATE,
     'ylds': YLDS_COLUMN_TEMPLATE,
-    'state_person_time': STATE_PERSON_TIME_COLUMN_TEMPLATE,
-    'transition_count': TRANSITION_COUNT_COLUMN_TEMPLATE,
+    'disease_state_person_time': DISEASE_STATE_PERSON_TIME_COLUMN_TEMPLATE,
+    #'screening_state_person_time': SCREENING_STATE_PERSON_TIME_COLUMN_TEMPLATE,
+    'disease_transition_count': DISEASE_TRANSITION_COUNT_COLUMN_TEMPLATE,
+    'screening_transition_count': SCREENING_TRANSITION_COUNT_COLUMN_TEMPLATE,
+    'event_count': EVENT_COUNT_COLUMN_TEMPLATE,
 }
+
+NON_COUNT_TEMPLATES = [
+]
 
 POP_STATES = ('living', 'dead', 'tracked', 'untracked')
 SEXES = ('male', 'female')
-# TODO - add literals for years in the model
-YEARS = ()
-# TODO - add literals for ages in the model
-AGE_GROUPS = ()
-# TODO - add causes of death
-CAUSES_OF_DEATH = (
-    'other_causes',
-    DIARRHEA_WITH_CONDITION_STATE_NAME,
-)
-# TODO - add causes of disability
-CAUSES_OF_DISABILITY = (
-    DIARRHEA_WITH_CONDITION_STATE_NAME,
-)
-STATES = (state for model in DISEASE_MODELS for state in DISEASE_MODEL_MAP[model]['states'])
-TRANSITIONS = (transition for model in DISEASE_MODELS for transition in DISEASE_MODEL_MAP[model]['transitions'])
+YEARS = tuple(range(2020, 2040))
+AGE_COHORTS = tuple(f'{2020 - (x + 5)}_to_{2020 - x}' for x in range(15, 85, 5))
+#EVENTS = (SCREENING_SCHEDULED, SCREENING_ATTENDED)
+CAUSES_OF_DEATH = ('other_causes', INVASIVE_CANCER_STATE_NAME,)
+CAUSES_OF_DISABILITY = (INVASIVE_CANCER_STATE_NAME,)
 
 TEMPLATE_FIELD_MAP = {
     'POP_STATE': POP_STATES,
     'YEAR': YEARS,
     'SEX': SEXES,
-    'AGE_GROUP': AGE_GROUPS,
+    'AGE_COHORT': AGE_COHORTS,
     'CAUSE_OF_DEATH': CAUSES_OF_DEATH,
     'CAUSE_OF_DISABILITY': CAUSES_OF_DISABILITY,
-    'STATE': STATES,
-    'TRANSITION': TRANSITIONS,
+    'DISEASE_STATE': CERVICAL_CANCER_MODEL_STATES,
+    #'SCREENING_STATE': SCREENING_MODEL_STATES,
+    'DISEASE_TRANSITION': CERVICAL_CANCER_MODEL_TRANSITIONS,
+    #'SCREENING_TRANSITION': SCREENING_MODEL_TRANSITIONS,
+    #'EVENT': EVENTS,
 }
 
 
@@ -204,4 +266,3 @@ def RESULT_COLUMNS(kind='all'):
         for value_group in value_groups:
             columns.append(template.format(**{field: value for field, value in zip(fields, value_group)}))
     return columns
-
