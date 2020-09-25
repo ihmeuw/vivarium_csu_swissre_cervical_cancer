@@ -1,8 +1,7 @@
 from vivarium_public_health.disease import (DiseaseState as DiseaseState_, DiseaseModel, SusceptibleState,
                                             RateTransition as RateTransition_, RecoveredState)
 
-from vivarium_csu_swissre_cervical_cancer import globals as project_globals
-
+from vivarium_csu_swissre_cervical_cancer import models, data_keys
 
 class RateTransition(RateTransition_):
     def load_transition_rate_data(self, builder):
@@ -30,9 +29,9 @@ class DiseaseState(DiseaseState_):
 
 
 def BreastCancer():
-    susceptible = SusceptibleState(project_globals.BREAST_CANCER_MODEL_NAME)
+    susceptible = SusceptibleState(models.BREAST_CANCER_MODEL_NAME)
     lcis = DiseaseState(
-        project_globals.LCIS_STATE_NAME,
+        models.LCIS_STATE_NAME,
         cause_type='sequela',
         get_data_functions={
             'disability_weight': lambda *_: 0,
@@ -40,7 +39,7 @@ def BreastCancer():
         },
     )
     dcis = DiseaseState(
-        project_globals.DCIS_STATE_NAME,
+        models.DCIS_STATE_NAME,
         cause_type='sequela',
         get_data_functions={
             'disability_weight': lambda *_: 0,
@@ -48,13 +47,13 @@ def BreastCancer():
         },
     )
     breast_cancer = DiseaseState(
-        project_globals.BREAST_CANCER_STATE_NAME,
+        models.BREAST_CANCER_STATE_NAME,
         # TODO remove this once disability weight is resolved
         get_data_functions={
             'disability_weight': lambda *_: 0,
         },
     )
-    recovered = RecoveredState(project_globals.BREAST_CANCER_MODEL_NAME)
+    recovered = RecoveredState(models.BREAST_CANCER_MODEL_NAME)
 
     # Add transitions for Susceptible state
     susceptible.allow_self_transitions()
@@ -62,14 +61,14 @@ def BreastCancer():
         lcis,
         source_data_type='rate',
         get_data_functions={
-            'incidence_rate': lambda _, builder: builder.data.load(project_globals.BREAST_CANCER.LCIS_INCIDENCE_RATE)
+            'incidence_rate': lambda _, builder: builder.data.load(data_keys.BREAST_CANCER.LCIS_INCIDENCE_RATE)
         }
     )
     susceptible.add_transition(
         dcis,
         source_data_type='rate',
         get_data_functions={
-            'incidence_rate': lambda _, builder: builder.data.load(project_globals.BREAST_CANCER.DCIS_INCIDENCE_RATE)
+            'incidence_rate': lambda _, builder: builder.data.load(data_keys.BREAST_CANCER.DCIS_INCIDENCE_RATE)
         }
     )
 
@@ -80,7 +79,7 @@ def BreastCancer():
         source_data_type='rate',
         get_data_functions={
             'transition_rate':
-                lambda builder, *_: builder.data.load(project_globals.BREAST_CANCER.DCIS_BREAST_CANCER_TRANSITION_RATE)
+                lambda builder, *_: builder.data.load(data_keys.CERVICAL_CANCER.DCIS_BREAST_CANCER_TRANSITION_RATE)
         }
     )
 
@@ -91,7 +90,7 @@ def BreastCancer():
         source_data_type='rate',
         get_data_functions={
             'transition_rate':
-                lambda builder, *_: builder.data.load(project_globals.BREAST_CANCER.LCIS_BREAST_CANCER_TRANSITION_RATE)
+                lambda builder, *_: builder.data.load(models.BREAST_CANCER.LCIS_BREAST_CANCER_TRANSITION_RATE)
         }
     )
 
@@ -102,7 +101,7 @@ def BreastCancer():
         source_data_type='rate',
         get_data_functions={
             'transition_rate':
-                lambda *_: project_globals.BREAST_CANCER.REMISSION_RATE_VALUE
+                lambda *_: data_keys.BREAST_CANCER.REMISSION_RATE_VALUE
         }
     )
 

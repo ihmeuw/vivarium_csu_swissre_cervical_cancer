@@ -13,17 +13,19 @@ for an example.
    No logging is done here. Logging is done in vivarium inputs itself and forwarded.
 """
 from pathlib import Path
+import random
 
 from gbd_mapping import causes, risk_factors, covariates
 import numpy as np
 import pandas as pd
 from vivarium.framework.artifact import EntityKey
+from vivarium.framework.randomness import get_hash
 from vivarium_gbd_access import gbd
 from vivarium_inputs import interface, utilities, utility_data, globals as vi_globals
 from vivarium_inputs.mapping_extension import alternative_risk_factors
 
-from vivarium_csu_swissre_cervical_cancer import paths, globals as project_globals
-
+from vivarium_csu_swissre_cervical_cancer import paths, data_keys
+from vivarium_csu_swissre_cervical_cancer.utilities import TruncnormDist
 
 ARTIFACT_INDEX_COLUMNS = [
     'location',
@@ -34,6 +36,11 @@ ARTIFACT_INDEX_COLUMNS = [
     'year_end',
     'draw',
 ]
+
+
+
+# TODO: get final number (this is temporary)
+BCC_DURATION = 14.5
 
 
 def get_data(lookup_key: str, location: str) -> pd.DataFrame:
@@ -53,11 +60,23 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
 
     """
     mapping = {
-        project_globals.POPULATION.STRUCTURE: load_population_structure,
-        project_globals.POPULATION.AGE_BINS: load_age_bins,
-        project_globals.POPULATION.DEMOGRAPHY: load_demographic_dimensions,
-        project_globals.POPULATION.TMRLE: load_theoretical_minimum_risk_life_expectancy,
-        project_globals.POPULATION.ACMR: load_acmr,
+        data_keys.POPULATION.STRUCTURE: load_population_structure,
+        data_keys.POPULATION.AGE_BINS: load_age_bins,
+        data_keys.POPULATION.DEMOGRAPHY: load_demographic_dimensions,
+        data_keys.POPULATION.TMRLE: load_theoretical_minimum_risk_life_expectancy,
+        data_keys.POPULATION.ACMR: load_acmr,
+
+        data_keys.CERVICAL_CANCER.HRHPV_PREVALENCE: load_hrhpv_prevalence,
+        data_keys.CERVICAL_CANCER.BCC_PREVALENCE: load_prevalence,
+        data_keys.CERVICAL_CANCER.PREVALENCE: load_prevalence,
+        # data_keys.CERVICAL_CANCER.HRHPV_INCIDENCE_RATE: ,
+        data_keys.CERVICAL_CANCER.BCC_HPV_POS_INCIDENCE_RATE: load_incidence_rate,
+        data_keys.CERVICAL_CANCER.BCC_HPV_NEG_INCIDENCE_RATE: load_incidence_rate,
+        data_keys.CERVICAL_CANCER.INCIDENCE_RATE: load_incidence_rate,
+        data_keys.CERVICAL_CANCER.DISABILITY_WEIGHT: load_disability_weight,
+        data_keys.CERVICAL_CANCER.EMR: load_emr,
+        data_keys.CERVICAL_CANCER.CSMR: load_csmr,
+        data_keys.CERVICAL_CANCER.RESTRICTIONS: load_metadata
     }
     return mapping[lookup_key](lookup_key, location)
 
@@ -122,6 +141,86 @@ def load_acmr(key: str, location: str) -> pd.DataFrame:
     return _transform_raw_data(location, paths.RAW_ACMR_DATA_PATH, True)
 
 
+def load_prevalence(key: str, location: str) -> pd.DataFrame:
+    # TODO: Need to calculate prev ratio for BCC and cover that here
+    base_prevalence = _transform_raw_data(location, paths.RAW_PREVALENCE_DATA_PATH, False)
+    prevalence_ratio = 1
+    return base_prevalence * prevalence_ratio
+
+
+def load_incidence_rate(key: str, location: str):
+    # TODO: handle BCC incidences (HPV+ and -) and add calculations -- need crude prev ratio for prev_BCC
+    # https://vivarium-research.readthedocs.io/en/latest/gbd2017_models/causes/neoplasms/cervical_cancer/cervical_cancer_cause_model.html?highlight=cervical%20cancer#disease-overview
+    if key == data_keys.CERVICAL_CANCER.INCIDENCE_RATE:
+        # TODO: do a proper calculation (incidence_c432/prev_BCC)
+        incidence_rate = _transform_raw_data(location, paths.RAW_INCIDENCE_RATE_DATA_PATH, False)
+    elif key == data_keys.CERVICAL_CANCER.BCC_HPV_POS_INCIDENCE_RATE:
+        # TODO: do a proper calculation (see doc)
+        incidence_rate = _transform_raw_data(location, paths.RAW_INCIDENCE_RATE_DATA_PATH, False)
+    elif key == data_keys.CERVICAL_CANCER.BCC_HPV_NEG_INCIDENCE_RATE:
+        # TODO: do a proper calculation (see doc)
+        incidence_rate = _transform_raw_data(location, paths.RAW_INCIDENCE_RATE_DATA_PATH, False)
+    else:
+        raise ValueError(f'Unrecognized key {key}')
+
+    return incidence_rate
+
+
+def load_disability_weight(key: str, location: str):
+    # TODO: fixme
+    # if key == data_keys.CERVICAL_CANCER.DISABILITY_WEIGHT:
+    #     # Get breast cancer prevalence by location
+    #     prevalence_data = _transform_raw_data_granular(paths.RAW_PREVALENCE_DATA_PATH, True)
+    #     location_weighted_disability_weight = 0
+    #
+    #     for swissre_location, location_weight in data_keys.SWISSRE_LOCATION_WEIGHTS.items():
+    #         prevalence_disability_weight = 0
+    #         breast_cancer_prevalence = prevalence_data[swissre_location]
+    #         total_sequela_prevalence = 0
+    #         for sequela in causes.breast_cancer.sequelae:
+    #             # Get prevalence and disability weight for location and sequela
+    #             prevalence = interface.get_measure(sequela, 'prevalence', swissre_location)
+    #             disability_weight = interface.get_measure(sequela, 'disability_weight', swissre_location)
+    #             # Apply prevalence weight
+    #             prevalence_disability_weight += prevalence * disability_weight
+    #             total_sequela_prevalence += prevalence
+    #
+    #         # Calculate disability weight and apply location weight
+    #         disability_weight = prevalence_disability_weight / total_sequela_prevalence
+    #         location_weighted_disability_weight += disability_weight * location_weight
+    #
+    #     disability_weight = location_weighted_disability_weight / sum(data_keys.SWISSRE_LOCATION_WEIGHTS.values())
+    # else:
+    #     # LCIS and DCIS cause no disability
+    #     disability_weight = 0
+    #
+    return 0
+
+
+def load_emr(key: str, location: str):
+    return (
+            get_data(data_keys.CERVICAL_CANCER.CSMR, location)
+            / get_data(data_keys.CERVICAL_CANCER.PREVALENCE, location)
+    )
+
+
+def load_csmr(key: str, location: str):
+    return _transform_raw_data(location, paths.RAW_MORTALITY_DATA_PATH, False)
+
+
+def _get_prevalence_draws(key: str, location: str) -> float:
+    random.seed(get_hash(f'{location}_{key}'))
+    random_values = np.random.random(1000)
+    return PREVALENCE_DISTS[key].ppf(random_values).tolist()
+
+
+def load_hrhpv_prevalence(key: str, location: str) -> pd.DataFrame:
+    # Create df with 1000 random vals like above
+
+    _get_prevalence_draws(key, location)
+    return 0.19  # TODO: update SWAG with real value/calculation
+
+
 def _load_em_from_meid(location, meid, measure):
     location_id = utility_data.get_location_id(location)
     data = gbd.get_modelable_entity_draws(meid, location_id)
@@ -142,13 +241,13 @@ def _transform_raw_data(location: str, data_path: Path, is_log_data: bool) -> pd
 
     # Weight the covered provinces
     processed_data['value'] = (sum(processed_data[province] * weight for province, weight
-                                   in project_globals.SWISSRE_LOCATION_WEIGHTS.items())
-                               / sum(project_globals.SWISSRE_LOCATION_WEIGHTS.values()))
+                                   in data_keys.SWISSRE_LOCATION_WEIGHTS.items())
+                               / sum(data_keys.SWISSRE_LOCATION_WEIGHTS.values()))
 
     processed_data = (
         processed_data
         # Remove province columns
-        .drop([province for province in project_globals.SWISSRE_LOCATION_WEIGHTS.keys()], axis=1)
+        .drop([province for province in data_keys.SWISSRE_LOCATION_WEIGHTS.keys()], axis=1)
         # Set index to final columns and unstack with draws as columns
         .reset_index()
         .set_index(ARTIFACT_INDEX_COLUMNS)
@@ -191,7 +290,7 @@ def _transform_raw_data_preliminary(data_path: Path, is_log_data: bool = False) 
     )
 
     # Filter locations down to the regions covered by SwissRE
-    swissre_locations_mask = processed_data['location'].isin(project_globals.SWISSRE_LOCATION_WEIGHTS)
+    swissre_locations_mask = processed_data['location'].isin(data_keys.SWISSRE_LOCATION_WEIGHTS)
     processed_data = processed_data[swissre_locations_mask]
 
     # Add year end column and create sex column with strings rather than ids
