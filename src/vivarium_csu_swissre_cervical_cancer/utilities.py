@@ -1,12 +1,11 @@
-import click
-import pandas as pd
-import numpy as np
-
-from typing import NamedTuple, Union, List
 from pathlib import Path
+from typing import Union, List
+
+import click
+import numpy as np
+import pandas as pd
 from loguru import logger
 from scipy.stats import truncnorm
-
 from vivarium.framework.randomness import get_hash
 
 from vivarium_csu_swissre_cervical_cancer import metadata
@@ -68,7 +67,6 @@ def len_longest_location() -> int:
     return len(max(metadata.LOCATIONS, key=len))
 
 
-
 def sanitize_location(location: str):
     """Cleans up location formatting for writing and reading from file names.
 
@@ -100,4 +98,3 @@ def delete_if_exists(*paths: Union[Path, List[Path]], confirm=False):
         for p in existing_paths:
             logger.info(f'Deleting artifact at {str(p)}.')
             p.unlink()
-

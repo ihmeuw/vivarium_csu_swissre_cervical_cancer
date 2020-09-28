@@ -3,6 +3,7 @@ from vivarium_public_health.disease import (DiseaseState as DiseaseState_, Disea
 
 from vivarium_csu_swissre_cervical_cancer import models, data_keys
 
+
 class RateTransition(RateTransition_):
     def load_transition_rate_data(self, builder):
         if 'transition_rate' in self._get_data_functions:

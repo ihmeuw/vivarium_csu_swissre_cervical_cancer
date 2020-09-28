@@ -6,20 +6,19 @@
    Use your best judgement.
 
 """
-from pathlib import Path
 import shutil
 import sys
 import time
+from pathlib import Path
 from typing import Union
 
 import click
+import vivarium_cluster_tools as vct
 from loguru import logger
 
-import vivarium_cluster_tools as vct
-
 from vivarium_csu_swissre_cervical_cancer import metadata, data_keys
-from vivarium_csu_swissre_cervical_cancer.utilities import sanitize_location, delete_if_exists, len_longest_location
 from vivarium_csu_swissre_cervical_cancer.tools.app_logging import add_logging_sink, decode_status
+from vivarium_csu_swissre_cervical_cancer.utilities import sanitize_location
 
 
 def build_artifacts(location: str, output_dir: str, append: bool, verbose: int):
@@ -104,8 +103,8 @@ def build_all_artifacts(output_dir: Path, verbose: int):
             job_template.args = [__file__, str(path), f'"{location}"']
             job_template.nativeSpecification = (f'-V '  # Export all environment variables
                                                 f'-b y '  # Command is a binary (python)
-                                                f'-P {metadata.CLUSTER_PROJECT} '  
-                                                f'-q {metadata.CLUSTER_QUEUE} '  
+                                                f'-P {metadata.CLUSTER_PROJECT} '
+                                                f'-q {metadata.CLUSTER_QUEUE} '
                                                 f'-l fmem={metadata.MAKE_ARTIFACT_MEM} '
                                                 f'-l fthread={metadata.MAKE_ARTIFACT_CPU} '
                                                 f'-l h_rt={metadata.MAKE_ARTIFACT_RUNTIME} '

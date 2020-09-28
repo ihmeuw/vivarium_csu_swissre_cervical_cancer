@@ -52,4 +52,3 @@ STATE_MACHINE_MAP = {
 # TODO - STATES & TRANSITIONS is broken in template (makes a generator instead of a tuple)
 STATES = tuple(state for model in STATE_MACHINE_MAP.values() for state in model['states'])
 TRANSITIONS = tuple(state for model in STATE_MACHINE_MAP.values() for state in model['transitions'])
-

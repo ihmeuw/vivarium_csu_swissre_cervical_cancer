@@ -20,12 +20,11 @@ import click
 from loguru import logger
 from vivarium.framework.utilities import handle_exceptions
 
-from vivarium_csu_swissre_cervical_cancer import paths
 from vivarium_csu_swissre_cervical_cancer import metadata
-
-from vivarium_csu_swissre_cervical_cancer.tools import configure_logging_to_terminal
-from vivarium_csu_swissre_cervical_cancer.tools import build_model_specifications
+from vivarium_csu_swissre_cervical_cancer import paths
 from vivarium_csu_swissre_cervical_cancer.tools import build_artifacts
+from vivarium_csu_swissre_cervical_cancer.tools import build_model_specifications
+from vivarium_csu_swissre_cervical_cancer.tools import configure_logging_to_terminal
 
 
 @click.command()

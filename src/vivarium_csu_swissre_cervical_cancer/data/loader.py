@@ -13,19 +13,16 @@ for an example.
    No logging is done here. Logging is done in vivarium inputs itself and forwarded.
 """
 from pathlib import Path
-import random
 
-from gbd_mapping import causes, risk_factors, covariates
 import numpy as np
 import pandas as pd
+from gbd_mapping import causes, risk_factors, covariates
 from vivarium.framework.artifact import EntityKey
-from vivarium.framework.randomness import get_hash
 from vivarium_gbd_access import gbd
 from vivarium_inputs import interface, utilities, utility_data, globals as vi_globals
 from vivarium_inputs.mapping_extension import alternative_risk_factors
 
 from vivarium_csu_swissre_cervical_cancer import paths, data_keys
-from vivarium_csu_swissre_cervical_cancer.utilities import TruncnormDist
 
 ARTIFACT_INDEX_COLUMNS = [
     'location',
@@ -36,8 +33,6 @@ ARTIFACT_INDEX_COLUMNS = [
     'year_end',
     'draw',
 ]
-
-
 
 # TODO: get final number (this is temporary)
 BCC_DURATION = 14.5
@@ -215,7 +210,7 @@ def load_hrhpv_prevalence(key: str, location: str) -> pd.DataFrame:
     # TODO: use data_keys.PREV_DISTS_HPV for each GBD age bin
     # use load_age_bins
     age_bins_df = load_age_bins(key, location)
-    [data_keys.PREV_DISTS_HPV["<25"].get_random_variable(x) for x in range(0,1000)]
+    [data_keys.PREV_DISTS_HPV["<25"].get_random_variable(x) for x in range(0, 1000)]
     return 0.19  # TODO: update SWAG with real value/calculation
 
 
@@ -244,12 +239,12 @@ def _transform_raw_data(location: str, data_path: Path, is_log_data: bool) -> pd
 
     processed_data = (
         processed_data
-        # Remove province columns
-        .drop([province for province in data_keys.SWISSRE_LOCATION_WEIGHTS.keys()], axis=1)
-        # Set index to final columns and unstack with draws as columns
-        .reset_index()
-        .set_index(ARTIFACT_INDEX_COLUMNS)
-        .unstack()
+            # Remove province columns
+            .drop([province for province in data_keys.SWISSRE_LOCATION_WEIGHTS.keys()], axis=1)
+            # Set index to final columns and unstack with draws as columns
+            .reset_index()
+            .set_index(ARTIFACT_INDEX_COLUMNS)
+            .unstack()
     )
 
     # Simplify column index and rename draw columns
@@ -270,16 +265,16 @@ def _transform_raw_data_preliminary(data_path: Path, is_log_data: bool = False) 
 
     processed_data = (
         raw_data
-        .reset_index()
-        # Set index to match age_bins and join
-        .set_index('age_group_id')
-        .join(age_bins, how='left')
-        .reset_index()
-        # Set index to match location and join
-        .set_index('location_id')
-        .join(locations, how='left')
-        .reset_index()
-        .rename(columns={
+            .reset_index()
+            # Set index to match age_bins and join
+            .set_index('age_group_id')
+            .join(age_bins, how='left')
+            .reset_index()
+            # Set index to match location and join
+            .set_index('location_id')
+            .join(locations, how='left')
+            .reset_index()
+            .rename(columns={
             'age_group_years_start': 'age_start',
             'age_group_years_end': 'age_end',
             'year_id': 'year_start',
@@ -306,8 +301,8 @@ def _transform_raw_data_preliminary(data_path: Path, is_log_data: bool = False) 
     # Set index and unstack data with locations as columns
     processed_data = (
         processed_data
-        .set_index(ARTIFACT_INDEX_COLUMNS)
-        .unstack(level=0)
+            .set_index(ARTIFACT_INDEX_COLUMNS)
+            .unstack(level=0)
     )
 
     # Simplify column index and add back location column

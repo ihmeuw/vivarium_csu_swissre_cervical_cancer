@@ -1,7 +1,8 @@
 from typing import NamedTuple
 
-from vivarium_csu_swissre_cervical_cancer.utilities import TruncnormDist
 from vivarium_public_health.utilities import TargetString
+
+from vivarium_csu_swissre_cervical_cancer.utilities import TruncnormDist
 
 #############
 # Data Keys #
@@ -17,6 +18,7 @@ SWISSRE_LOCATION_WEIGHTS = {
     'Henan': 0.16,
     'Heilongjiang': 0.16,
 }
+
 
 class __Population(NamedTuple):
     STRUCTURE: str = 'population.structure'
@@ -36,6 +38,7 @@ class __Population(NamedTuple):
 
 POPULATION = __Population()
 
+
 # TODO - sample key group used to idneitfy keys in model
 # For more information see the tutorial:
 # https://vivarium-inputs.readthedocs.io/en/latest/tutorials/pulling_data.html#entity-measure-data
@@ -45,8 +48,10 @@ class __CervicalCancer(NamedTuple):
     BCC_PREVALENCE: TargetString = TargetString('sequela.benign_cervical_cancer.prevalence')
     PREVALENCE: TargetString = TargetString('cause.cervical_cancer.prevalence')
     # HRHPV_INCIDENCE_RATE: TargetString = TargetString('sequela.high_risk_hpv.incidence_rate')
-    BCC_HPV_POS_INCIDENCE_RATE: TargetString = TargetString('sequela.hpv_positive_benign_cervical_cancer.incidence_rate')
-    BCC_HPV_NEG_INCIDENCE_RATE: TargetString = TargetString('sequela.hpv_negative_benign_cervical_cancer.incidence_rate')
+    BCC_HPV_POS_INCIDENCE_RATE: TargetString = TargetString(
+        'sequela.hpv_positive_benign_cervical_cancer.incidence_rate')
+    BCC_HPV_NEG_INCIDENCE_RATE: TargetString = TargetString(
+        'sequela.hpv_negative_benign_cervical_cancer.incidence_rate')
     INCIDENCE_RATE: TargetString = TargetString('cause.cervical_cancer.incidence_rate')
     DISABILITY_WEIGHT: TargetString = TargetString('cause.cervical_cancer.disability_weight')
     EMR: TargetString = TargetString('cause.cervical_cancer.excess_mortality_rate')
@@ -57,6 +62,7 @@ class __CervicalCancer(NamedTuple):
 
     REMISSION_RATE_VALUE = 0.1
     HRHPV_INCIDENCE_VALUE = 0.01  # TODO: this is a made-up number, need real value
+
     @property
     def name(self):
         return 'cervical_cancer'

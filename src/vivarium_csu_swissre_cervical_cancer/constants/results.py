@@ -1,11 +1,8 @@
 import itertools
 
 from vivarium_csu_swissre_cervical_cancer.models import (CERVICAL_CANCER_MODEL_STATES,
-                                                                   CERVICAL_CANCER_MODEL_TRANSITIONS,
-                                                                   INVASIVE_CANCER_STATE_NAME, STATES)
-
-
-
+                                                         CERVICAL_CANCER_MODEL_TRANSITIONS,
+                                                         INVASIVE_CANCER_STATE_NAME, STATES)
 
 #################################
 # Results columns and variables #
@@ -59,7 +56,7 @@ COLUMN_TEMPLATES = {
     'ylls': YLLS_COLUMN_TEMPLATE,
     'ylds': YLDS_COLUMN_TEMPLATE,
     'disease_state_person_time': DISEASE_STATE_PERSON_TIME_COLUMN_TEMPLATE,
-    #'screening_state_person_time': SCREENING_STATE_PERSON_TIME_COLUMN_TEMPLATE,
+    # 'screening_state_person_time': SCREENING_STATE_PERSON_TIME_COLUMN_TEMPLATE,
     'disease_transition_count': DISEASE_TRANSITION_COUNT_COLUMN_TEMPLATE,
     'screening_transition_count': SCREENING_TRANSITION_COUNT_COLUMN_TEMPLATE,
     'event_count': EVENT_COUNT_COLUMN_TEMPLATE,
@@ -72,7 +69,7 @@ POP_STATES = ('living', 'dead', 'tracked', 'untracked')
 SEXES = ('male', 'female')
 YEARS = tuple(range(2020, 2040))
 AGE_COHORTS = tuple(f'{2020 - (x + 5)}_to_{2020 - x}' for x in range(15, 85, 5))
-#EVENTS = (SCREENING_SCHEDULED, SCREENING_ATTENDED)
+# EVENTS = (SCREENING_SCHEDULED, SCREENING_ATTENDED)
 CAUSES_OF_DEATH = ('other_causes', INVASIVE_CANCER_STATE_NAME,)
 CAUSES_OF_DISABILITY = (INVASIVE_CANCER_STATE_NAME,)
 
@@ -84,10 +81,10 @@ TEMPLATE_FIELD_MAP = {
     'CAUSE_OF_DEATH': CAUSES_OF_DEATH,
     'CAUSE_OF_DISABILITY': CAUSES_OF_DISABILITY,
     'DISEASE_STATE': CERVICAL_CANCER_MODEL_STATES,
-    #'SCREENING_STATE': SCREENING_MODEL_STATES,
+    # 'SCREENING_STATE': SCREENING_MODEL_STATES,
     'DISEASE_TRANSITION': CERVICAL_CANCER_MODEL_TRANSITIONS,
-    #'SCREENING_TRANSITION': SCREENING_MODEL_TRANSITIONS,
-    #'EVENT': EVENTS,
+    # 'SCREENING_TRANSITION': SCREENING_MODEL_TRANSITIONS,
+    # 'EVENT': EVENTS,
 }
 
 
