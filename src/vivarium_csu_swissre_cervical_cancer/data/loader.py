@@ -208,16 +208,14 @@ def load_csmr(key: str, location: str):
     return _transform_raw_data(location, paths.RAW_MORTALITY_DATA_PATH, False)
 
 
-def _get_prevalence_draws(key: str, location: str) -> float:
-    random.seed(get_hash(f'{location}_{key}'))
-    random_values = np.random.random(1000)
-    return PREVALENCE_DISTS[key].ppf(random_values).tolist()
-
-
 def load_hrhpv_prevalence(key: str, location: str) -> pd.DataFrame:
     # Create df with 1000 random vals like above
-
-    _get_prevalence_draws(key, location)
+    # index == age_bins, 1000 cols for 1000 draws
+    # XXX : where we stopped 9/25
+    # TODO: use data_keys.PREV_DISTS_HPV for each GBD age bin
+    # use load_age_bins
+    age_bins_df = load_age_bins(key, location)
+    [data_keys.PREV_DISTS_HPV["<25"].get_random_variable(x) for x in range(0,1000)]
     return 0.19  # TODO: update SWAG with real value/calculation
 
 

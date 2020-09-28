@@ -21,7 +21,7 @@ from loguru import logger
 from vivarium.framework.utilities import handle_exceptions
 
 from vivarium_csu_swissre_cervical_cancer import paths
-from vivarium_csu_swissre_cervical_cancer import metadata as md
+from vivarium_csu_swissre_cervical_cancer import metadata
 
 from vivarium_csu_swissre_cervical_cancer.tools import configure_logging_to_terminal
 from vivarium_csu_swissre_cervical_cancer.tools import build_model_specifications
@@ -37,7 +37,7 @@ from vivarium_csu_swissre_cervical_cancer.tools import build_artifacts
 @click.option('-l', '--location',
               default='all',
               show_default=True,
-              type=click.Choice(md.LOCATIONS + ['all']),
+              type=click.Choice(metadata.LOCATIONS + ['all']),
               help='Location to make specification for. Specify locations in metadata.py')
 @click.option('-o', '--output-dir',
               default=str(paths.MODEL_SPEC_DIR),
@@ -66,7 +66,7 @@ def make_specs(template: str, location: str, output_dir: str, verbose: int, with
 @click.option('-l', '--location',
               default='all',
               show_default=True,
-              type=click.Choice(md.LOCATIONS + ['all']),
+              type=click.Choice(metadata.LOCATIONS + ['all']),
               help=('Location for which to make an artifact. Note: prefer building archives on the cluster.\n'
                     'If you specify location "all" you must be on a cluster node.'))
 @click.option('-o', '--output-dir',

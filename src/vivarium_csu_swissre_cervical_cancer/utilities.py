@@ -9,7 +9,7 @@ from scipy.stats import truncnorm
 
 from vivarium.framework.randomness import get_hash
 
-from vivarium_csu_swissre_cervical_cancer import metadata as md
+from vivarium_csu_swissre_cervical_cancer import metadata
 
 
 class TruncnormDist:
@@ -65,7 +65,8 @@ def len_longest_location() -> int:
     -------
        Length of the longest location in the project.
     """
-    return len(max(md.LOCATIONS, key=len))
+    return len(max(metadata.LOCATIONS, key=len))
+
 
 
 def sanitize_location(location: str):
