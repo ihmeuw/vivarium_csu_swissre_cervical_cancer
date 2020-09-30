@@ -2,7 +2,6 @@ from typing import NamedTuple
 
 from vivarium_public_health.utilities import TargetString
 
-from vivarium_csu_swissre_cervical_cancer.utilities import TruncnormDist
 
 #############
 # Data Keys #
@@ -44,7 +43,7 @@ POPULATION = __Population()
 # https://vivarium-inputs.readthedocs.io/en/latest/tutorials/pulling_data.html#entity-measure-data
 class __CervicalCancer(NamedTuple):
     # TODO - update below for cervical cancer (from BC)
-    HRHPV_PREVALENCE: TargetString = TargetString('sequela.high_risk_hpv.prevalence')
+    # HRHPV_PREVALENCE: TargetString = TargetString('sequela.high_risk_hpv.prevalence')
     BCC_PREVALENCE: TargetString = TargetString('sequela.benign_cervical_cancer.prevalence')
     PREVALENCE: TargetString = TargetString('cause.cervical_cancer.prevalence')
     # HRHPV_INCIDENCE_RATE: TargetString = TargetString('sequela.high_risk_hpv.incidence_rate')
@@ -58,10 +57,8 @@ class __CervicalCancer(NamedTuple):
     CSMR: TargetString = TargetString('cause.cervical_cancer.cause_specific_mortality_rate')
     RESTRICTIONS: TargetString = TargetString('cause.cervical_cancer.restrictions')
 
+    # XXX NB: add a typing to get looped over in make_artifact
     BCC_PREVALENCE_RATIO = TargetString('sequela.benign_cervical_cancer.prevalence_ratio')
-
-    REMISSION_RATE_VALUE = 0.1
-    HRHPV_INCIDENCE_VALUE = 0.01  # TODO: this is a made-up number, need real value
 
     @property
     def name(self):
@@ -73,17 +70,6 @@ class __CervicalCancer(NamedTuple):
 
 
 CERVICAL_CANCER = __CervicalCancer()
-
-BCC_PREVALENCE_RATIO = TruncnormDist(
-    CERVICAL_CANCER.BCC_PREVALENCE_RATIO, 0.07, 0.06, 0.0, 100.0)
-
-# Inferred from: the infection rate of high-risk HPVs in women aged <25, 25-45, and >45 years
-# was 24.3% (95%CI, 19.0%-29.6%), 19.9% (95%CI, 16.4-23.4), and 21.4% (95%CI, 17.3-25.5), respectively.
-PREV_DISTS_HPV = {
-    "<25": TruncnormDist("hrHPV prevalence age < 25", 0.243, 0.0265),
-    "25-45": TruncnormDist("hrHPV prevalence 25 <= age <= 45", 0.199, 0.0175),
-    ">45": TruncnormDist("hrHPV prevalence age > 45", 0.214, 0.0205)
-}
 
 MAKE_ARTIFACT_KEY_GROUPS = [
     POPULATION,

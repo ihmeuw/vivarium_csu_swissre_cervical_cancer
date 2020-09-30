@@ -102,7 +102,7 @@ def BreastCancer():
         source_data_type='rate',
         get_data_functions={
             'transition_rate':
-                lambda *_: data_keys.BREAST_CANCER.REMISSION_RATE_VALUE
+                lambda *_: data_keys.BREAST_CANCER.REMISSION_RATE
         }
     )
 

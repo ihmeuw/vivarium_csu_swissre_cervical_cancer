@@ -8,7 +8,7 @@ from loguru import logger
 from scipy.stats import truncnorm
 from vivarium.framework.randomness import get_hash
 
-from vivarium_csu_swissre_cervical_cancer import metadata
+from vivarium_csu_swissre_cervical_cancer.constants import metadata
 
 
 class TruncnormDist:

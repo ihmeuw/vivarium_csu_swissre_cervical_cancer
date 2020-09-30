@@ -137,10 +137,29 @@ def load_acmr(key: str, location: str) -> pd.DataFrame:
 
 
 def load_prevalence(key: str, location: str) -> pd.DataFrame:
-    # TODO: Need to calculate prev ratio for BCC and cover that here
+    """Computes prevalence values for key at location."""
     base_prevalence = _transform_raw_data(location, paths.RAW_PREVALENCE_DATA_PATH, False)
-    prevalence_ratio = 1
-    return base_prevalence * prevalence_ratio
+    if key == data_keys.CERVICAL_CANCER.BCC_PREVALENCE:
+        # Read from CSV, data from model document
+        prev_ratio = pd.read_csv(paths.BCC_PREVALENCE_RATIO_PATH)
+        prev_ratio["age_start"], prev_ratio["age_end"] = [pd.to_numeric(col) for col in
+                                                          prev_ratio["age_group"].str.split("_to_").str]
+        prev_ratio = prev_ratio.set_index(['age_start', 'age_end'])
+        base_prevalence = base_prevalence.reset_index().set_index([
+            'age_start', 'age_end', 'location', 'sex', 'year_start', 'year_end'
+        ])
+        base_prevalence = (
+            base_prevalence
+            .multiply(prev_ratio['prevalence_ratio'], axis=0)
+            .reset_index()
+            .set_index(ARTIFACT_INDEX_COLUMNS[:-1])
+        )
+        return base_prevalence
+    elif key == data_keys.CERVICAL_CANCER.PREVALENCE:
+        prev_ratio = 1
+        return base_prevalence * prev_ratio
+    else:
+        raise ValueError(f'Unrecognized key {key}')
 
 
 def load_incidence_rate(key: str, location: str):
@@ -203,15 +222,15 @@ def load_csmr(key: str, location: str):
     return _transform_raw_data(location, paths.RAW_MORTALITY_DATA_PATH, False)
 
 
-def load_hrhpv_prevalence(key: str, location: str) -> pd.DataFrame:
-    # Create df with 1000 random vals like above
-    # index == age_bins, 1000 cols for 1000 draws
-    # XXX : where we stopped 9/25
-    # TODO: use data_keys.PREV_DISTS_HPV for each GBD age bin
-    # use load_age_bins
-    age_bins_df = load_age_bins(key, location)
-    [data_keys.PREV_DISTS_HPV["<25"].get_random_variable(x) for x in range(0, 1000)]
-    return 0.19  # TODO: update SWAG with real value/calculation
+# def load_hrhpv_prevalence(key: str, location: str) -> pd.DataFrame:
+#     # Create df with 1000 random vals like above
+#     # index == age_bins, 1000 cols for 1000 draws
+#     # XXX : where we stopped 9/25
+#     # TODO: use data_keys.PREV_DISTS_HPV for each GBD age bin
+#     # use load_age_bins
+#     age_bins_df = load_age_bins(key, location)
+#     [data_keys.PREV_DISTS_HPV["<25"].get_random_variable(x) for x in range(0, 1000)]
+#     return 0.19  # TODO: update SWAG with real value/calculation
 
 
 def _load_em_from_meid(location, meid, measure):
