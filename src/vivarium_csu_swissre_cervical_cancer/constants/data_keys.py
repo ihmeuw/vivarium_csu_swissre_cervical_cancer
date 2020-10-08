@@ -38,9 +38,6 @@ class __Population(NamedTuple):
 POPULATION = __Population()
 
 
-# TODO - sample key group used to idneitfy keys in model
-# For more information see the tutorial:
-# https://vivarium-inputs.readthedocs.io/en/latest/tutorials/pulling_data.html#entity-measure-data
 class __CervicalCancer(NamedTuple):
     # TODO - update below for cervical cancer (from BC)
     # HRHPV_PREVALENCE: TargetString = TargetString('sequela.high_risk_hpv.prevalence')

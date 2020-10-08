@@ -19,3 +19,10 @@ PREV_DISTS_HPV = {
     "25-45": TruncnormDist("hrHPV prevalence 25 <= age <= 45", 0.199, 0.0175),
     ">45": TruncnormDist("hrHPV prevalence age > 45", 0.214, 0.0205)
 }
+
+# use numpy normal get random variable
+# from: https://vivarium-research.readthedocs.io/en/latest/gbd2017_models/causes/neoplasms/cervical_cancer/cervical_cancer_cause_model.html?highlight=cervical%20cancer
+# relative risk of developing BCC for hrHPV infected women versus without HPV infection = 16.2 (95%CI 9.6 to 27.3)
+# mean, stddev, key
+#Lets start with log-normal, since the CI is so asymmetric
+RR_HRHPV_PARAMS = (16.2, 4.425, "rr_hrhpv_dist")

@@ -19,10 +19,10 @@ import pandas as pd
 from gbd_mapping import causes, risk_factors, covariates
 from vivarium.framework.artifact import EntityKey
 from vivarium_gbd_access import gbd
-from vivarium_inputs import interface, utilities, utility_data, globals as vi_globals
+from vivarium_inputs import interface, utilities as vi_utils, utility_data, globals as vi_globals
 from vivarium_inputs.mapping_extension import alternative_risk_factors
 
-from vivarium_csu_swissre_cervical_cancer import paths, data_keys
+from vivarium_csu_swissre_cervical_cancer import paths, data_keys, data_values, utilities, metadata
 
 ARTIFACT_INDEX_COLUMNS = [
     'location',
@@ -30,8 +30,7 @@ ARTIFACT_INDEX_COLUMNS = [
     'age_start',
     'age_end',
     'year_start',
-    'year_end',
-    'draw',
+    'year_end'
 ]
 
 # TODO: get final number (this is temporary)
@@ -61,7 +60,7 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         data_keys.POPULATION.TMRLE: load_theoretical_minimum_risk_life_expectancy,
         data_keys.POPULATION.ACMR: load_acmr,
 
-        data_keys.CERVICAL_CANCER.HRHPV_PREVALENCE: load_hrhpv_prevalence,
+        # data_keys.CERVICAL_CANCER.HRHPV_PREVALENCE: load_hrhpv_prevalence,
         data_keys.CERVICAL_CANCER.BCC_PREVALENCE: load_prevalence,
         data_keys.CERVICAL_CANCER.PREVALENCE: load_prevalence,
         # data_keys.CERVICAL_CANCER.HRHPV_INCIDENCE_RATE: ,
@@ -152,7 +151,7 @@ def load_prevalence(key: str, location: str) -> pd.DataFrame:
             base_prevalence
             .multiply(prev_ratio['prevalence_ratio'], axis=0)
             .reset_index()
-            .set_index(ARTIFACT_INDEX_COLUMNS[:-1])
+            .set_index(ARTIFACT_INDEX_COLUMNS)
         )
         return base_prevalence
     elif key == data_keys.CERVICAL_CANCER.PREVALENCE:
@@ -162,59 +161,114 @@ def load_prevalence(key: str, location: str) -> pd.DataFrame:
         raise ValueError(f'Unrecognized key {key}')
 
 
+def load_prevalence_hrhpv(artifact_idx) -> pd.DataFrame:
+    df = pd.read_hdf(paths.HRHPV_PREVALENCE_PATH)
+    df = df.set_index(artifact_idx)
+    return df
+
+
+def old_load_prevalence_hrhpv(artifact_idx) -> pd.DataFrame:
+    # TODO: Update this for Nicole Y's updates per Slack (https://ihme.slack.com/archives/GTH3RKQM6/p1602028173125200)
+    """Get hrhpv prevalence mapping"""
+    lookup_prev = pd.DataFrame({"group": ["<25", "25-45", ">45"]})
+    for i in range(0, 1000):
+        lookup_prev[f"draw_{i}"] = lookup_prev["group"].apply(
+            lambda x: data_values.PREV_DISTS_HPV[x].get_random_variable(i)
+        )
+    lookup_prev = lookup_prev.set_index("group")
+
+    def find_prev_group(age_end):
+        if (age_end < 25):
+            return lookup_prev.at["<25", f"draw_{i}"]
+        elif (age_end <= 45):
+            return lookup_prev.at["25-45", f"draw_{i}"]
+        else:
+            return lookup_prev.at[">45", f"draw_{i}"]
+
+    prev_dist = pd.DataFrame(index=artifact_idx)
+    prev_dist = prev_dist.reset_index()
+    for i in range(0, 1000):
+        prev_dist[f"draw_{i}"] = prev_dist["age_end"].apply(find_prev_group)
+    return prev_dist.set_index(ARTIFACT_INDEX_COLUMNS)
+
+
+def load_rr_hrhpv(columns) -> pd.Series:
+    """Get random variables based on distribution for RR hrHPV, columns should be those in the prevalence df"""
+    per_draw_rr = pd.Series([utilities.get_lognormal_random_variable(*data_values.RR_HRHPV_PARAMS, x) for x in range(0, 1000)], index=columns)
+    return per_draw_rr
+
+
+def load_paf(prev, rr) -> pd.DataFrame:
+    # Calculates PAF: prev_hrHPV×(RR_hrHPV−1)/prev_hrHPV×(RR_hrHPV−1)+1
+    rr_minus_one = rr - 1
+    num = prev.multiply(rr_minus_one, axis=1)
+    return num / (num + 1)
+
+
 def load_incidence_rate(key: str, location: str):
-    # TODO: handle BCC incidences (HPV+ and -) and add calculations -- need crude prev ratio for prev_BCC
-    # https://vivarium-research.readthedocs.io/en/latest/gbd2017_models/causes/neoplasms/cervical_cancer/cervical_cancer_cause_model.html?highlight=cervical%20cancer#disease-overview
+    """Get the incidence rate given a key."""
+    bcc_prevalence = load_prevalence(data_keys.CERVICAL_CANCER.BCC_PREVALENCE,
+                                     location)  # TODO: optimization: check artifact for this instead of rebuilding
     if key == data_keys.CERVICAL_CANCER.INCIDENCE_RATE:
-        # TODO: do a proper calculation (incidence_c432/prev_BCC)
+        # i_ICC = (incidence_c432/prev_BCC)
         incidence_rate = _transform_raw_data(location, paths.RAW_INCIDENCE_RATE_DATA_PATH, False)
-    elif key == data_keys.CERVICAL_CANCER.BCC_HPV_POS_INCIDENCE_RATE:
-        # TODO: do a proper calculation (see doc)
-        incidence_rate = _transform_raw_data(location, paths.RAW_INCIDENCE_RATE_DATA_PATH, False)
-    elif key == data_keys.CERVICAL_CANCER.BCC_HPV_NEG_INCIDENCE_RATE:
-        # TODO: do a proper calculation (see doc)
-        incidence_rate = _transform_raw_data(location, paths.RAW_INCIDENCE_RATE_DATA_PATH, False)
+        incidence_rate = incidence_rate / bcc_prevalence
     else:
-        raise ValueError(f'Unrecognized key {key}')
+        hrhpv_prevalence = load_prevalence_hrhpv(bcc_prevalence.index)
+        hrhpv_rr = load_rr_hrhpv(bcc_prevalence.columns)
+        paf = load_paf(hrhpv_prevalence, hrhpv_rr)
+        if key == data_keys.CERVICAL_CANCER.BCC_HPV_POS_INCIDENCE_RATE:
+            # incidence rate = (((prev_BCC/DURATION_BCC)×(1−PAF)×RR_hrHPV)/prev_hrHPV)
+            incidence_rate = (bcc_prevalence / BCC_DURATION) * (1 - paf) * hrhpv_rr
+            incidence_rate = incidence_rate / hrhpv_prevalence
+        elif key == data_keys.CERVICAL_CANCER.BCC_HPV_NEG_INCIDENCE_RATE:
+            # incidence rate = ((prev_BCC/DURATION_BCC)×(1−PAF)) / prev_susceptible
+            # prev_susceptible = 1 - (prev_hrHPV + prev_BCC + prev_c432)
+            prev_c432 = _transform_raw_data(location, paths.RAW_PREVALENCE_DATA_PATH, False)
+            incidence_rate = (bcc_prevalence / BCC_DURATION) * (1 - paf)
+            incidence_rate = incidence_rate / (1 - (hrhpv_prevalence + bcc_prevalence + prev_c432))
+        else:
+            raise ValueError(f'Unrecognized key {key}')
 
     return incidence_rate
 
 
 def load_disability_weight(key: str, location: str):
-    # TODO: fixme
-    # if key == data_keys.CERVICAL_CANCER.DISABILITY_WEIGHT:
-    #     # Get breast cancer prevalence by location
-    #     prevalence_data = _transform_raw_data_granular(paths.RAW_PREVALENCE_DATA_PATH, True)
-    #     location_weighted_disability_weight = 0
-    #
-    #     for swissre_location, location_weight in data_keys.SWISSRE_LOCATION_WEIGHTS.items():
-    #         prevalence_disability_weight = 0
-    #         breast_cancer_prevalence = prevalence_data[swissre_location]
-    #         total_sequela_prevalence = 0
-    #         for sequela in causes.breast_cancer.sequelae:
-    #             # Get prevalence and disability weight for location and sequela
-    #             prevalence = interface.get_measure(sequela, 'prevalence', swissre_location)
-    #             disability_weight = interface.get_measure(sequela, 'disability_weight', swissre_location)
-    #             # Apply prevalence weight
-    #             prevalence_disability_weight += prevalence * disability_weight
-    #             total_sequela_prevalence += prevalence
-    #
-    #         # Calculate disability weight and apply location weight
-    #         disability_weight = prevalence_disability_weight / total_sequela_prevalence
-    #         location_weighted_disability_weight += disability_weight * location_weight
-    #
-    #     disability_weight = location_weighted_disability_weight / sum(data_keys.SWISSRE_LOCATION_WEIGHTS.values())
-    # else:
-    #     # LCIS and DCIS cause no disability
-    #     disability_weight = 0
-    #
-    return 0
+    """Loads disability weights, weighting by subnational location for
+    invasive cervical cancer"""
+    if key == data_keys.CERVICAL_CANCER.DISABILITY_WEIGHT:
+        location_weighted_disability_weight = 0
+        for swissre_location, location_weight in data_keys.SWISSRE_LOCATION_WEIGHTS.items():
+            prevalence_disability_weight = 0
+            total_sequela_prevalence = 0
+            for sequela in causes.cervical_cancer.sequelae:
+                # Get prevalence and disability weight for location and sequela
+                prevalence = interface.get_measure(sequela, 'prevalence', swissre_location)
+                prevalence = prevalence.reset_index()
+                prevalence["location"] = metadata.LOCATIONS[0]
+                prevalence = prevalence.set_index(ARTIFACT_INDEX_COLUMNS)
+                disability_weight = interface.get_measure(sequela, 'disability_weight', swissre_location)
+                disability_weight = disability_weight.reset_index()
+                disability_weight["location"] = metadata.LOCATIONS[0]
+                disability_weight = disability_weight.set_index(ARTIFACT_INDEX_COLUMNS)
+                # Apply prevalence weight
+                prevalence_disability_weight += prevalence * disability_weight
+                total_sequela_prevalence += prevalence
+
+            # Calculate disability weight and apply location weight
+            disability_weight = prevalence_disability_weight / total_sequela_prevalence
+            disability_weight = disability_weight.fillna(0)  # handle NaNs from dividing by 0 prevalence
+            location_weighted_disability_weight += disability_weight * location_weight
+        disability_weight = location_weighted_disability_weight / sum(data_keys.SWISSRE_LOCATION_WEIGHTS.values())
+        return disability_weight
+    else:
+        raise ValueError(f'Unrecognized key {key}')
 
 
 def load_emr(key: str, location: str):
     return (
-            get_data(data_keys.CERVICAL_CANCER.CSMR, location)
-            / get_data(data_keys.CERVICAL_CANCER.PREVALENCE, location)
+            load_csmr(data_keys.CERVICAL_CANCER.CSMR, location)
+            / load_prevalence(data_keys.CERVICAL_CANCER.PREVALENCE, location)
     )
 
 
@@ -237,13 +291,13 @@ def _load_em_from_meid(location, meid, measure):
     location_id = utility_data.get_location_id(location)
     data = gbd.get_modelable_entity_draws(meid, location_id)
     data = data[data.measure_id == vi_globals.MEASURES[measure]]
-    data = utilities.normalize(data, fill_value=0)
+    data = vi_utils.normalize(data, fill_value=0)
     data = data.filter(vi_globals.DEMOGRAPHIC_COLUMNS + vi_globals.DRAW_COLUMNS)
-    data = utilities.reshape(data)
-    data = utilities.scrub_gbd_conventions(data, location)
-    data = utilities.split_interval(data, interval_column='age', split_column_prefix='age')
-    data = utilities.split_interval(data, interval_column='year', split_column_prefix='year')
-    return utilities.sort_hierarchical_data(data)
+    data = vi_utils.reshape(data)
+    data = vi_utils.scrub_gbd_conventions(data, location)
+    data = vi_utils.split_interval(data, interval_column='age', split_column_prefix='age')
+    data = vi_utils.split_interval(data, interval_column='year', split_column_prefix='year')
+    return vi_utils.sort_hierarchical_data(data)
 
 
 # TODO - add project-specific data functions here
@@ -262,7 +316,7 @@ def _transform_raw_data(location: str, data_path: Path, is_log_data: bool) -> pd
             .drop([province for province in data_keys.SWISSRE_LOCATION_WEIGHTS.keys()], axis=1)
             # Set index to final columns and unstack with draws as columns
             .reset_index()
-            .set_index(ARTIFACT_INDEX_COLUMNS)
+            .set_index(ARTIFACT_INDEX_COLUMNS + ["draw"])
             .unstack()
     )
 
@@ -320,7 +374,7 @@ def _transform_raw_data_preliminary(data_path: Path, is_log_data: bool = False) 
     # Set index and unstack data with locations as columns
     processed_data = (
         processed_data
-            .set_index(ARTIFACT_INDEX_COLUMNS)
+            .set_index(ARTIFACT_INDEX_COLUMNS + ["draw"])
             .unstack(level=0)
     )
 

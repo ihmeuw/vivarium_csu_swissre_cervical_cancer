@@ -57,6 +57,11 @@ class TruncnormDist:
         return truncnorm(self.a, self.b, self.mean, self.sd).ppf(quantiles)
 
 
+def get_lognormal_random_variable(mean: float, sd: float, seed: str, draw: int) -> float:
+    np.random.seed(get_hash(f'{seed}_draw_{draw}'))
+    return np.random.lognormal(mean, sd)
+
+
 def len_longest_location() -> int:
     """Returns the length of the longest location in the project.
 
