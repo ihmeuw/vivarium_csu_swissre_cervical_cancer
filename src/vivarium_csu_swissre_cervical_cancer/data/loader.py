@@ -59,7 +59,7 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         data_keys.POPULATION.DEMOGRAPHY: load_demographic_dimensions,
         data_keys.POPULATION.TMRLE: load_theoretical_minimum_risk_life_expectancy,
         data_keys.POPULATION.ACMR: load_acmr,
-
+        data_keys.CERVICAL_CANCER.HRHPV_REMISSION_RATE: load_hrhpv_remission,
         data_keys.CERVICAL_CANCER.HRHPV_PREVALENCE: load_prevalence,
         data_keys.CERVICAL_CANCER.BCC_PREVALENCE: load_prevalence,
         data_keys.CERVICAL_CANCER.PREVALENCE: load_prevalence,
@@ -158,7 +158,7 @@ def load_prevalence(key: str, location: str) -> pd.DataFrame:
         prev_ratio = 1
         rv = base_prevalence * prev_ratio
         return _expand_age_bins(rv)
-    elif key == data_keys.HRHPV_PREVALENCE:
+    elif key == data_keys.CERVICAL_CANCER.HRHPV_PREVALENCE:
         return _load_hrhpv_raw(paths.HRHPV_PREVALENCE_PATH)
     else:
         raise ValueError(f'Unrecognized key {key}')
@@ -168,6 +168,13 @@ def load_rr_hrhpv(columns) -> pd.Series:
     """Get random variables based on distribution for RR hrHPV, columns should be those in the prevalence df"""
     per_draw_rr = pd.Series([utilities.get_lognormal_random_variable(*data_values.RR_HRHPV_PARAMS, x) for x in range(0, 1000)], index=columns)
     return per_draw_rr
+
+
+def load_hrhpv_remission(key: str, location: str) -> pd.DataFrame:
+    if key == data_keys.CERVICAL_CANCER.HRHPV_REMISSION_RATE:
+        return _load_hrhpv_raw(paths.HRHPV_REMISSION_PATH)
+    else:
+        raise ValueError(f'Unrecognized key {key}')
 
 
 def load_paf(prev, rr) -> pd.DataFrame:
@@ -187,10 +194,10 @@ def load_incidence_rate(key: str, location: str) -> pd.DataFrame:
         incidence_rate = _transform_raw_data(location, paths.RAW_INCIDENCE_RATE_DATA_PATH, False)
         incidence_rate = _expand_age_bins(incidence_rate)
         incidence_rate = incidence_rate / bcc_prevalence
-    elif key == data_keys.HRHPV_INCIDENCE_RATE:
+    elif key == data_keys.CERVICAL_CANCER.HRHPV_INCIDENCE_RATE:
         return _load_hrhpv_raw(paths.HRHPV_INCIDENCE_PATH)
     else:
-        hrhpv_prevalence = load_prevalence(data_keys.HRHPV_PREVALENCE, location)
+        hrhpv_prevalence = load_prevalence(data_keys.CERVICAL_CANCER.HRHPV_PREVALENCE, location)
         hrhpv_rr = load_rr_hrhpv(bcc_prevalence.columns)
         paf = load_paf(hrhpv_prevalence, hrhpv_rr)
         if key == data_keys.CERVICAL_CANCER.BCC_HPV_POS_INCIDENCE_RATE:
@@ -367,7 +374,7 @@ def _expand_age_bins(df: pd.DataFrame, index_col=ARTIFACT_INDEX_COLUMNS, prev_ag
 
 
 def _load_hrhpv_raw(path) -> pd.DataFrame:
-    df = pd.read_hdf(paths)
+    df = pd.read_hdf(path)
     df = df.set_index(ARTIFACT_INDEX_COLUMNS)
     return df
 

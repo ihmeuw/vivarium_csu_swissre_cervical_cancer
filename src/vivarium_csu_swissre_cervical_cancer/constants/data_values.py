@@ -1,7 +1,5 @@
 
 REMISSION_RATE = 0.1
-HRHPV_INCIDENCE = 0.01  # TODO: this is a made-up number, need real value
-HRHPV_REMISSION_RATE = 0.3  # TODO: replace this SWAG
 
 # BCC duration: "temporarily use 14.5 years"
 BCC_DURATION = 14.5

@@ -42,6 +42,7 @@ class __CervicalCancer(NamedTuple):
     BCC_PREVALENCE: TargetString = TargetString('sequela.benign_cervical_cancer.prevalence')
     PREVALENCE: TargetString = TargetString('cause.cervical_cancer.prevalence')
     HRHPV_INCIDENCE_RATE: TargetString = TargetString('sequela.high_risk_hpv.incidence_rate')
+    HRHPV_REMISSION_RATE: TargetString = TargetString('sequela.high_risk_hpv.remission_rate')
     BCC_HPV_POS_INCIDENCE_RATE: TargetString = TargetString(
         'sequela.hpv_positive_benign_cervical_cancer.incidence_rate')
     BCC_HPV_NEG_INCIDENCE_RATE: TargetString = TargetString(
@@ -51,9 +52,6 @@ class __CervicalCancer(NamedTuple):
     EMR: TargetString = TargetString('cause.cervical_cancer.excess_mortality_rate')
     CSMR: TargetString = TargetString('cause.cervical_cancer.cause_specific_mortality_rate')
     RESTRICTIONS: TargetString = TargetString('cause.cervical_cancer.restrictions')
-
-    # TODO: add a typing to get looped over in make_artifact
-    BCC_PREVALENCE_RATIO: TargetString = TargetString('sequela.benign_cervical_cancer.prevalence_ratio')
 
     @property
     def name(self):
