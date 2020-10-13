@@ -60,10 +60,10 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         data_keys.POPULATION.TMRLE: load_theoretical_minimum_risk_life_expectancy,
         data_keys.POPULATION.ACMR: load_acmr,
 
-        # data_keys.CERVICAL_CANCER.HRHPV_PREVALENCE: load_hrhpv_prevalence,
+        data_keys.CERVICAL_CANCER.HRHPV_PREVALENCE: load_prevalence,
         data_keys.CERVICAL_CANCER.BCC_PREVALENCE: load_prevalence,
         data_keys.CERVICAL_CANCER.PREVALENCE: load_prevalence,
-        # data_keys.CERVICAL_CANCER.HRHPV_INCIDENCE_RATE: ,
+        data_keys.CERVICAL_CANCER.HRHPV_INCIDENCE_RATE: load_incidence_rate,
         data_keys.CERVICAL_CANCER.BCC_HPV_POS_INCIDENCE_RATE: load_incidence_rate,
         data_keys.CERVICAL_CANCER.BCC_HPV_NEG_INCIDENCE_RATE: load_incidence_rate,
         data_keys.CERVICAL_CANCER.INCIDENCE_RATE: load_incidence_rate,
@@ -153,43 +153,15 @@ def load_prevalence(key: str, location: str) -> pd.DataFrame:
             .reset_index()
             .set_index(ARTIFACT_INDEX_COLUMNS)
         )
-        return base_prevalence
+        return _expand_age_bins(base_prevalence)
     elif key == data_keys.CERVICAL_CANCER.PREVALENCE:
         prev_ratio = 1
-        return base_prevalence * prev_ratio
+        rv = base_prevalence * prev_ratio
+        return _expand_age_bins(rv)
+    elif key == data_keys.HRHPV_PREVALENCE:
+        return _load_hrhpv_raw(paths.HRHPV_PREVALENCE_PATH)
     else:
         raise ValueError(f'Unrecognized key {key}')
-
-
-def load_prevalence_hrhpv(artifact_idx) -> pd.DataFrame:
-    df = pd.read_hdf(paths.HRHPV_PREVALENCE_PATH)
-    df = df.set_index(artifact_idx)
-    return df
-
-
-def old_load_prevalence_hrhpv(artifact_idx) -> pd.DataFrame:
-    # TODO: Update this for Nicole Y's updates per Slack (https://ihme.slack.com/archives/GTH3RKQM6/p1602028173125200)
-    """Get hrhpv prevalence mapping"""
-    lookup_prev = pd.DataFrame({"group": ["<25", "25-45", ">45"]})
-    for i in range(0, 1000):
-        lookup_prev[f"draw_{i}"] = lookup_prev["group"].apply(
-            lambda x: data_values.PREV_DISTS_HPV[x].get_random_variable(i)
-        )
-    lookup_prev = lookup_prev.set_index("group")
-
-    def find_prev_group(age_end):
-        if (age_end < 25):
-            return lookup_prev.at["<25", f"draw_{i}"]
-        elif (age_end <= 45):
-            return lookup_prev.at["25-45", f"draw_{i}"]
-        else:
-            return lookup_prev.at[">45", f"draw_{i}"]
-
-    prev_dist = pd.DataFrame(index=artifact_idx)
-    prev_dist = prev_dist.reset_index()
-    for i in range(0, 1000):
-        prev_dist[f"draw_{i}"] = prev_dist["age_end"].apply(find_prev_group)
-    return prev_dist.set_index(ARTIFACT_INDEX_COLUMNS)
 
 
 def load_rr_hrhpv(columns) -> pd.Series:
@@ -199,22 +171,26 @@ def load_rr_hrhpv(columns) -> pd.Series:
 
 
 def load_paf(prev, rr) -> pd.DataFrame:
-    # Calculates PAF: prev_hrHPV×(RR_hrHPV−1)/prev_hrHPV×(RR_hrHPV−1)+1
+    """Calculates Population Attributable Fraction (PAF): prev×(RR−1)/prev×(RR−1)+1"""
+    # Calculate PAF: prev_hrHPV×(RR_hrHPV−1)/prev_hrHPV×(RR_hrHPV−1)+1
     rr_minus_one = rr - 1
     num = prev.multiply(rr_minus_one, axis=1)
     return num / (num + 1)
 
 
-def load_incidence_rate(key: str, location: str):
+def load_incidence_rate(key: str, location: str) -> pd.DataFrame:
     """Get the incidence rate given a key."""
     bcc_prevalence = load_prevalence(data_keys.CERVICAL_CANCER.BCC_PREVALENCE,
                                      location)  # TODO: optimization: check artifact for this instead of rebuilding
     if key == data_keys.CERVICAL_CANCER.INCIDENCE_RATE:
         # i_ICC = (incidence_c432/prev_BCC)
         incidence_rate = _transform_raw_data(location, paths.RAW_INCIDENCE_RATE_DATA_PATH, False)
+        incidence_rate = _expand_age_bins(incidence_rate)
         incidence_rate = incidence_rate / bcc_prevalence
+    elif key == data_keys.HRHPV_INCIDENCE_RATE:
+        return _load_hrhpv_raw(paths.HRHPV_INCIDENCE_PATH)
     else:
-        hrhpv_prevalence = load_prevalence_hrhpv(bcc_prevalence.index)
+        hrhpv_prevalence = load_prevalence(data_keys.HRHPV_PREVALENCE, location)
         hrhpv_rr = load_rr_hrhpv(bcc_prevalence.columns)
         paf = load_paf(hrhpv_prevalence, hrhpv_rr)
         if key == data_keys.CERVICAL_CANCER.BCC_HPV_POS_INCIDENCE_RATE:
@@ -225,6 +201,7 @@ def load_incidence_rate(key: str, location: str):
             # incidence rate = ((prev_BCC/DURATION_BCC)×(1−PAF)) / prev_susceptible
             # prev_susceptible = 1 - (prev_hrHPV + prev_BCC + prev_c432)
             prev_c432 = _transform_raw_data(location, paths.RAW_PREVALENCE_DATA_PATH, False)
+            prev_c432 = _expand_age_bins(prev_c432)
             incidence_rate = (bcc_prevalence / BCC_DURATION) * (1 - paf)
             incidence_rate = incidence_rate / (1 - (hrhpv_prevalence + bcc_prevalence + prev_c432))
         else:
@@ -276,17 +253,6 @@ def load_csmr(key: str, location: str):
     return _transform_raw_data(location, paths.RAW_MORTALITY_DATA_PATH, False)
 
 
-# def load_hrhpv_prevalence(key: str, location: str) -> pd.DataFrame:
-#     # Create df with 1000 random vals like above
-#     # index == age_bins, 1000 cols for 1000 draws
-#     # XXX : where we stopped 9/25
-#     # TODO: use data_keys.PREV_DISTS_HPV for each GBD age bin
-#     # use load_age_bins
-#     age_bins_df = load_age_bins(key, location)
-#     [data_keys.PREV_DISTS_HPV["<25"].get_random_variable(x) for x in range(0, 1000)]
-#     return 0.19  # TODO: update SWAG with real value/calculation
-
-
 def _load_em_from_meid(location, meid, measure):
     location_id = utility_data.get_location_id(location)
     data = gbd.get_modelable_entity_draws(meid, location_id)
@@ -300,7 +266,7 @@ def _load_em_from_meid(location, meid, measure):
     return vi_utils.sort_hierarchical_data(data)
 
 
-# TODO - add project-specific data functions here
+# project-specific data functions
 def _transform_raw_data(location: str, data_path: Path, is_log_data: bool) -> pd.DataFrame:
     processed_data = _transform_raw_data_preliminary(data_path, is_log_data)
     processed_data['location'] = location
@@ -381,6 +347,29 @@ def _transform_raw_data_preliminary(data_path: Path, is_log_data: bool = False) 
     # Simplify column index and add back location column
     processed_data.columns = [c[1] for c in processed_data.columns]
     return processed_data
+
+
+def _expand_age_bins(df: pd.DataFrame, index_col=ARTIFACT_INDEX_COLUMNS, prev_age_bin_sz=5) -> pd.DataFrame:
+    """Expands granularity of age bin to 1-year age bins from prev_age_bin_sz-sized age bins."""
+    df = df.reset_index()
+    final_df = pd.DataFrame(columns=df.columns)
+    for i in range(0, prev_age_bin_sz):
+        tmp = df.copy()
+        tmp["age_start"] = tmp["age_start"] + i
+        tmp["age_end"] = tmp["age_start"] + 1
+        final_df = final_df.append(tmp)
+        del tmp
+    # handle tail edge case
+    last_age_bin_start = max(final_df["age_start"])
+    final_df.loc[final_df["age_start"] == last_age_bin_start, "age_end"] = 125.0
+    final_df = final_df.set_index(index_col)
+    return final_df
+
+
+def _load_hrhpv_raw(path) -> pd.DataFrame:
+    df = pd.read_hdf(paths)
+    df = df.set_index(ARTIFACT_INDEX_COLUMNS)
+    return df
 
 
 def get_entity(key: str):

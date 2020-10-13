@@ -10,7 +10,6 @@ from vivarium_public_health.utilities import TargetString
 METADATA_LOCATIONS = 'metadata.locations'
 
 SWISSRE_LOCATION_WEIGHTS = {
-    # TODO: Determine weights (below are from BC)
     'Tianjin': 0.18,
     'Jiangsu': 0.28,
     'Guangdong': 0.22,
@@ -39,11 +38,10 @@ POPULATION = __Population()
 
 
 class __CervicalCancer(NamedTuple):
-    # TODO - update below for cervical cancer (from BC)
-    # HRHPV_PREVALENCE: TargetString = TargetString('sequela.high_risk_hpv.prevalence')
+    HRHPV_PREVALENCE: TargetString = TargetString('sequela.high_risk_hpv.prevalence')
     BCC_PREVALENCE: TargetString = TargetString('sequela.benign_cervical_cancer.prevalence')
     PREVALENCE: TargetString = TargetString('cause.cervical_cancer.prevalence')
-    # HRHPV_INCIDENCE_RATE: TargetString = TargetString('sequela.high_risk_hpv.incidence_rate')
+    HRHPV_INCIDENCE_RATE: TargetString = TargetString('sequela.high_risk_hpv.incidence_rate')
     BCC_HPV_POS_INCIDENCE_RATE: TargetString = TargetString(
         'sequela.hpv_positive_benign_cervical_cancer.incidence_rate')
     BCC_HPV_NEG_INCIDENCE_RATE: TargetString = TargetString(
@@ -54,8 +52,8 @@ class __CervicalCancer(NamedTuple):
     CSMR: TargetString = TargetString('cause.cervical_cancer.cause_specific_mortality_rate')
     RESTRICTIONS: TargetString = TargetString('cause.cervical_cancer.restrictions')
 
-    # XXX NB: add a typing to get looped over in make_artifact
-    BCC_PREVALENCE_RATIO = TargetString('sequela.benign_cervical_cancer.prevalence_ratio')
+    # TODO: add a typing to get looped over in make_artifact
+    BCC_PREVALENCE_RATIO: TargetString = TargetString('sequela.benign_cervical_cancer.prevalence_ratio')
 
     @property
     def name(self):

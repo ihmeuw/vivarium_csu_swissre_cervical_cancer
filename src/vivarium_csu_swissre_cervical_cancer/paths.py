@@ -14,6 +14,7 @@ RAW_ACMR_DATA_PATH = RAW_DATA_ROOT / 'all_cause_mortality_rate.hdf'
 RAW_INCIDENCE_RATE_DATA_PATH = RAW_DATA_ROOT / 'incidence_rate.hdf'
 RAW_MORTALITY_DATA_PATH = RAW_DATA_ROOT / 'mortality.hdf'
 RAW_PREVALENCE_DATA_PATH = RAW_DATA_ROOT / 'prevalence.hdf'
+# TODO: update these filenames with non-mockups!
 HRHPV_REMISSION_PATH = RAW_DATA_ROOT / 'hrhpv_remission_mockup.hdf'
 HRHPV_INCIDENCE_PATH = RAW_DATA_ROOT / 'hrhpv_incidence_mockup.hdf'
 HRHPV_PREVALENCE_PATH = RAW_DATA_ROOT / 'hrhpv_prevalence_mockup.hdf'
