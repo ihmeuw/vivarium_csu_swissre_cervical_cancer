@@ -14,16 +14,15 @@ for an example.
 """
 from pathlib import Path
 
-from gbd_mapping import causes, risk_factors, covariates
 import numpy as np
 import pandas as pd
+from gbd_mapping import causes, risk_factors, covariates
 from vivarium.framework.artifact import EntityKey
 from vivarium_gbd_access import gbd
-from vivarium_inputs import interface, utilities, utility_data, globals as vi_globals
+from vivarium_inputs import interface, utilities as vi_utils, utility_data, globals as vi_globals
 from vivarium_inputs.mapping_extension import alternative_risk_factors
 
-from vivarium_csu_swissre_cervical_cancer import paths, globals as project_globals
-
+from vivarium_csu_swissre_cervical_cancer import paths, data_keys, data_values, utilities, metadata
 
 ARTIFACT_INDEX_COLUMNS = [
     'location',
@@ -31,9 +30,11 @@ ARTIFACT_INDEX_COLUMNS = [
     'age_start',
     'age_end',
     'year_start',
-    'year_end',
-    'draw',
+    'year_end'
 ]
+
+# TODO: get final number (this is temporary)
+BCC_DURATION = 14.5
 
 
 def get_data(lookup_key: str, location: str) -> pd.DataFrame:
@@ -53,11 +54,23 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
 
     """
     mapping = {
-        project_globals.POPULATION.STRUCTURE: load_population_structure,
-        project_globals.POPULATION.AGE_BINS: load_age_bins,
-        project_globals.POPULATION.DEMOGRAPHY: load_demographic_dimensions,
-        project_globals.POPULATION.TMRLE: load_theoretical_minimum_risk_life_expectancy,
-        project_globals.POPULATION.ACMR: load_acmr,
+        data_keys.POPULATION.STRUCTURE: load_population_structure,
+        data_keys.POPULATION.AGE_BINS: load_age_bins,
+        data_keys.POPULATION.DEMOGRAPHY: load_demographic_dimensions,
+        data_keys.POPULATION.TMRLE: load_theoretical_minimum_risk_life_expectancy,
+        data_keys.POPULATION.ACMR: load_acmr,
+
+        data_keys.CERVICAL_CANCER.HRHPV_PREVALENCE: load_prevalence,
+        data_keys.CERVICAL_CANCER.BCC_PREVALENCE: load_prevalence,
+        data_keys.CERVICAL_CANCER.PREVALENCE: load_prevalence,
+        data_keys.CERVICAL_CANCER.HRHPV_INCIDENCE_RATE: load_incidence_rate,
+        data_keys.CERVICAL_CANCER.BCC_HPV_POS_INCIDENCE_RATE: load_incidence_rate,
+        data_keys.CERVICAL_CANCER.BCC_HPV_NEG_INCIDENCE_RATE: load_incidence_rate,
+        data_keys.CERVICAL_CANCER.INCIDENCE_RATE: load_incidence_rate,
+        data_keys.CERVICAL_CANCER.DISABILITY_WEIGHT: load_disability_weight,
+        data_keys.CERVICAL_CANCER.EMR: load_emr,
+        data_keys.CERVICAL_CANCER.CSMR: load_csmr,
+        data_keys.CERVICAL_CANCER.RESTRICTIONS: load_metadata
     }
     return mapping[lookup_key](lookup_key, location)
 
@@ -122,37 +135,155 @@ def load_acmr(key: str, location: str) -> pd.DataFrame:
     return _transform_raw_data(location, paths.RAW_ACMR_DATA_PATH, True)
 
 
+def load_prevalence(key: str, location: str) -> pd.DataFrame:
+    """Computes prevalence values for key at location."""
+    base_prevalence = _transform_raw_data(location, paths.RAW_PREVALENCE_DATA_PATH, False)
+    if key == data_keys.CERVICAL_CANCER.BCC_PREVALENCE:
+        # Read from CSV, data from model document
+        prev_ratio = pd.read_csv(paths.BCC_PREVALENCE_RATIO_PATH)
+        prev_ratio["age_start"], prev_ratio["age_end"] = [pd.to_numeric(col) for col in
+                                                          prev_ratio["age_group"].str.split("_to_").str]
+        prev_ratio = prev_ratio.set_index(['age_start', 'age_end'])
+        base_prevalence = base_prevalence.reset_index().set_index([
+            'age_start', 'age_end', 'location', 'sex', 'year_start', 'year_end'
+        ])
+        base_prevalence = (
+            base_prevalence
+            .multiply(prev_ratio['prevalence_ratio'], axis=0)
+            .reset_index()
+            .set_index(ARTIFACT_INDEX_COLUMNS)
+        )
+        return _expand_age_bins(base_prevalence)
+    elif key == data_keys.CERVICAL_CANCER.PREVALENCE:
+        prev_ratio = 1
+        rv = base_prevalence * prev_ratio
+        return _expand_age_bins(rv)
+    elif key == data_keys.HRHPV_PREVALENCE:
+        return _load_hrhpv_raw(paths.HRHPV_PREVALENCE_PATH)
+    else:
+        raise ValueError(f'Unrecognized key {key}')
+
+
+def load_rr_hrhpv(columns) -> pd.Series:
+    """Get random variables based on distribution for RR hrHPV, columns should be those in the prevalence df"""
+    per_draw_rr = pd.Series([utilities.get_lognormal_random_variable(*data_values.RR_HRHPV_PARAMS, x) for x in range(0, 1000)], index=columns)
+    return per_draw_rr
+
+
+def load_paf(prev, rr) -> pd.DataFrame:
+    """Calculates Population Attributable Fraction (PAF): prev×(RR−1)/prev×(RR−1)+1"""
+    # Calculate PAF: prev_hrHPV×(RR_hrHPV−1)/prev_hrHPV×(RR_hrHPV−1)+1
+    rr_minus_one = rr - 1
+    num = prev.multiply(rr_minus_one, axis=1)
+    return num / (num + 1)
+
+
+def load_incidence_rate(key: str, location: str) -> pd.DataFrame:
+    """Get the incidence rate given a key."""
+    bcc_prevalence = load_prevalence(data_keys.CERVICAL_CANCER.BCC_PREVALENCE,
+                                     location)  # TODO: optimization: check artifact for this instead of rebuilding
+    if key == data_keys.CERVICAL_CANCER.INCIDENCE_RATE:
+        # i_ICC = (incidence_c432/prev_BCC)
+        incidence_rate = _transform_raw_data(location, paths.RAW_INCIDENCE_RATE_DATA_PATH, False)
+        incidence_rate = _expand_age_bins(incidence_rate)
+        incidence_rate = incidence_rate / bcc_prevalence
+    elif key == data_keys.HRHPV_INCIDENCE_RATE:
+        return _load_hrhpv_raw(paths.HRHPV_INCIDENCE_PATH)
+    else:
+        hrhpv_prevalence = load_prevalence(data_keys.HRHPV_PREVALENCE, location)
+        hrhpv_rr = load_rr_hrhpv(bcc_prevalence.columns)
+        paf = load_paf(hrhpv_prevalence, hrhpv_rr)
+        if key == data_keys.CERVICAL_CANCER.BCC_HPV_POS_INCIDENCE_RATE:
+            # incidence rate = (((prev_BCC/DURATION_BCC)×(1−PAF)×RR_hrHPV)/prev_hrHPV)
+            incidence_rate = (bcc_prevalence / BCC_DURATION) * (1 - paf) * hrhpv_rr
+            incidence_rate = incidence_rate / hrhpv_prevalence
+        elif key == data_keys.CERVICAL_CANCER.BCC_HPV_NEG_INCIDENCE_RATE:
+            # incidence rate = ((prev_BCC/DURATION_BCC)×(1−PAF)) / prev_susceptible
+            # prev_susceptible = 1 - (prev_hrHPV + prev_BCC + prev_c432)
+            prev_c432 = _transform_raw_data(location, paths.RAW_PREVALENCE_DATA_PATH, False)
+            prev_c432 = _expand_age_bins(prev_c432)
+            incidence_rate = (bcc_prevalence / BCC_DURATION) * (1 - paf)
+            incidence_rate = incidence_rate / (1 - (hrhpv_prevalence + bcc_prevalence + prev_c432))
+        else:
+            raise ValueError(f'Unrecognized key {key}')
+
+    return incidence_rate
+
+
+def load_disability_weight(key: str, location: str):
+    """Loads disability weights, weighting by subnational location for
+    invasive cervical cancer"""
+    if key == data_keys.CERVICAL_CANCER.DISABILITY_WEIGHT:
+        location_weighted_disability_weight = 0
+        for swissre_location, location_weight in data_keys.SWISSRE_LOCATION_WEIGHTS.items():
+            prevalence_disability_weight = 0
+            total_sequela_prevalence = 0
+            for sequela in causes.cervical_cancer.sequelae:
+                # Get prevalence and disability weight for location and sequela
+                prevalence = interface.get_measure(sequela, 'prevalence', swissre_location)
+                prevalence = prevalence.reset_index()
+                prevalence["location"] = metadata.LOCATIONS[0]
+                prevalence = prevalence.set_index(ARTIFACT_INDEX_COLUMNS)
+                disability_weight = interface.get_measure(sequela, 'disability_weight', swissre_location)
+                disability_weight = disability_weight.reset_index()
+                disability_weight["location"] = metadata.LOCATIONS[0]
+                disability_weight = disability_weight.set_index(ARTIFACT_INDEX_COLUMNS)
+                # Apply prevalence weight
+                prevalence_disability_weight += prevalence * disability_weight
+                total_sequela_prevalence += prevalence
+
+            # Calculate disability weight and apply location weight
+            disability_weight = prevalence_disability_weight / total_sequela_prevalence
+            disability_weight = disability_weight.fillna(0)  # handle NaNs from dividing by 0 prevalence
+            location_weighted_disability_weight += disability_weight * location_weight
+        disability_weight = location_weighted_disability_weight / sum(data_keys.SWISSRE_LOCATION_WEIGHTS.values())
+        return disability_weight
+    else:
+        raise ValueError(f'Unrecognized key {key}')
+
+
+def load_emr(key: str, location: str):
+    return (
+            load_csmr(data_keys.CERVICAL_CANCER.CSMR, location)
+            / load_prevalence(data_keys.CERVICAL_CANCER.PREVALENCE, location)
+    )
+
+
+def load_csmr(key: str, location: str):
+    return _transform_raw_data(location, paths.RAW_MORTALITY_DATA_PATH, False)
+
+
 def _load_em_from_meid(location, meid, measure):
     location_id = utility_data.get_location_id(location)
     data = gbd.get_modelable_entity_draws(meid, location_id)
     data = data[data.measure_id == vi_globals.MEASURES[measure]]
-    data = utilities.normalize(data, fill_value=0)
+    data = vi_utils.normalize(data, fill_value=0)
     data = data.filter(vi_globals.DEMOGRAPHIC_COLUMNS + vi_globals.DRAW_COLUMNS)
-    data = utilities.reshape(data)
-    data = utilities.scrub_gbd_conventions(data, location)
-    data = utilities.split_interval(data, interval_column='age', split_column_prefix='age')
-    data = utilities.split_interval(data, interval_column='year', split_column_prefix='year')
-    return utilities.sort_hierarchical_data(data)
+    data = vi_utils.reshape(data)
+    data = vi_utils.scrub_gbd_conventions(data, location)
+    data = vi_utils.split_interval(data, interval_column='age', split_column_prefix='age')
+    data = vi_utils.split_interval(data, interval_column='year', split_column_prefix='year')
+    return vi_utils.sort_hierarchical_data(data)
 
 
-# TODO - add project-specific data functions here
+# project-specific data functions
 def _transform_raw_data(location: str, data_path: Path, is_log_data: bool) -> pd.DataFrame:
     processed_data = _transform_raw_data_preliminary(data_path, is_log_data)
     processed_data['location'] = location
 
     # Weight the covered provinces
     processed_data['value'] = (sum(processed_data[province] * weight for province, weight
-                                   in project_globals.SWISSRE_LOCATION_WEIGHTS.items())
-                               / sum(project_globals.SWISSRE_LOCATION_WEIGHTS.values()))
+                                   in data_keys.SWISSRE_LOCATION_WEIGHTS.items())
+                               / sum(data_keys.SWISSRE_LOCATION_WEIGHTS.values()))
 
     processed_data = (
         processed_data
-        # Remove province columns
-        .drop([province for province in project_globals.SWISSRE_LOCATION_WEIGHTS.keys()], axis=1)
-        # Set index to final columns and unstack with draws as columns
-        .reset_index()
-        .set_index(ARTIFACT_INDEX_COLUMNS)
-        .unstack()
+            # Remove province columns
+            .drop([province for province in data_keys.SWISSRE_LOCATION_WEIGHTS.keys()], axis=1)
+            # Set index to final columns and unstack with draws as columns
+            .reset_index()
+            .set_index(ARTIFACT_INDEX_COLUMNS + ["draw"])
+            .unstack()
     )
 
     # Simplify column index and rename draw columns
@@ -173,16 +304,16 @@ def _transform_raw_data_preliminary(data_path: Path, is_log_data: bool = False) 
 
     processed_data = (
         raw_data
-        .reset_index()
-        # Set index to match age_bins and join
-        .set_index('age_group_id')
-        .join(age_bins, how='left')
-        .reset_index()
-        # Set index to match location and join
-        .set_index('location_id')
-        .join(locations, how='left')
-        .reset_index()
-        .rename(columns={
+            .reset_index()
+            # Set index to match age_bins and join
+            .set_index('age_group_id')
+            .join(age_bins, how='left')
+            .reset_index()
+            # Set index to match location and join
+            .set_index('location_id')
+            .join(locations, how='left')
+            .reset_index()
+            .rename(columns={
             'age_group_years_start': 'age_start',
             'age_group_years_end': 'age_end',
             'year_id': 'year_start',
@@ -191,7 +322,7 @@ def _transform_raw_data_preliminary(data_path: Path, is_log_data: bool = False) 
     )
 
     # Filter locations down to the regions covered by SwissRE
-    swissre_locations_mask = processed_data['location'].isin(project_globals.SWISSRE_LOCATION_WEIGHTS)
+    swissre_locations_mask = processed_data['location'].isin(data_keys.SWISSRE_LOCATION_WEIGHTS)
     processed_data = processed_data[swissre_locations_mask]
 
     # Add year end column and create sex column with strings rather than ids
@@ -209,13 +340,36 @@ def _transform_raw_data_preliminary(data_path: Path, is_log_data: bool = False) 
     # Set index and unstack data with locations as columns
     processed_data = (
         processed_data
-        .set_index(ARTIFACT_INDEX_COLUMNS)
-        .unstack(level=0)
+            .set_index(ARTIFACT_INDEX_COLUMNS + ["draw"])
+            .unstack(level=0)
     )
 
     # Simplify column index and add back location column
     processed_data.columns = [c[1] for c in processed_data.columns]
     return processed_data
+
+
+def _expand_age_bins(df: pd.DataFrame, index_col=ARTIFACT_INDEX_COLUMNS, prev_age_bin_sz=5) -> pd.DataFrame:
+    """Expands granularity of age bin to 1-year age bins from prev_age_bin_sz-sized age bins."""
+    df = df.reset_index()
+    final_df = pd.DataFrame(columns=df.columns)
+    for i in range(0, prev_age_bin_sz):
+        tmp = df.copy()
+        tmp["age_start"] = tmp["age_start"] + i
+        tmp["age_end"] = tmp["age_start"] + 1
+        final_df = final_df.append(tmp)
+        del tmp
+    # handle tail edge case
+    last_age_bin_start = max(final_df["age_start"])
+    final_df.loc[final_df["age_start"] == last_age_bin_start, "age_end"] = 125.0
+    final_df = final_df.set_index(index_col)
+    return final_df
+
+
+def _load_hrhpv_raw(path) -> pd.DataFrame:
+    df = pd.read_hdf(paths)
+    df = df.set_index(ARTIFACT_INDEX_COLUMNS)
+    return df
 
 
 def get_entity(key: str):

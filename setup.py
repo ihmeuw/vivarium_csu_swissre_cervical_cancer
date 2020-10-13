@@ -3,9 +3,7 @@ import os
 
 from setuptools import setup, find_packages
 
-
 if __name__ == "__main__":
-
     base_dir = os.path.dirname(__file__)
     src_dir = os.path.join(base_dir, "src")
 

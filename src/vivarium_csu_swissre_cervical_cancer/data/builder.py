@@ -11,11 +11,11 @@ Some degree of verbosity/boilerplate is fine in the interest of transparancy.
 """
 from pathlib import Path
 
-from loguru import logger
 import pandas as pd
+from loguru import logger
 from vivarium.framework.artifact import Artifact, get_location_term, EntityKey
 
-from vivarium_csu_swissre_cervical_cancer import globals as project_globals
+from vivarium_csu_swissre_cervical_cancer import data_keys
 from vivarium_csu_swissre_cervical_cancer.data import loader
 
 
@@ -41,7 +41,7 @@ def open_artifact(output_path: Path, location: str) -> Artifact:
 
     artifact = Artifact(output_path, filter_terms=[get_location_term(location)])
 
-    key = project_globals.METADATA_LOCATIONS
+    key = data_keys.METADATA_LOCATIONS
     if key not in artifact:
         artifact.write(key, [location])
 
@@ -91,6 +91,7 @@ def write_data(artifact: Artifact, key: str, data: pd.DataFrame):
         logger.debug(f'Writing data for {key} to artifact.')
         artifact.write(key, data)
     return artifact.load(key)
+
 
 # TODO - writing and reading by draw is necessary if you are using
 #        LBWSG data. Find the read function in utilities.py
