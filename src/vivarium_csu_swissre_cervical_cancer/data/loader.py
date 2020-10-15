@@ -108,7 +108,7 @@ def load_demographic_dimensions(key: str, location: str) -> pd.DataFrame:
             'age_end': 95,
             'year_start': 2019,
             'year_end': 2020,
-        },
+        }
     ]).set_index(['location', 'sex', 'age_start', 'age_end', 'year_start', 'year_end'])
 
 
@@ -257,7 +257,7 @@ def load_emr(key: str, location: str):
 
 
 def load_csmr(key: str, location: str):
-    return _transform_raw_data(location, paths.RAW_MORTALITY_DATA_PATH, False)
+    return _expand_age_bins(_transform_raw_data(location, paths.RAW_MORTALITY_DATA_PATH, False))
 
 
 def _load_em_from_meid(location, meid, measure):

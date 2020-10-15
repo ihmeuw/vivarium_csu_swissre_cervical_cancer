@@ -1,0 +1,1 @@
+from vivarium_csu_swissre_cervical_cancer.components.disease import CervicalCancer
