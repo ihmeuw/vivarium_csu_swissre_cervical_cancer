@@ -100,7 +100,7 @@ def CervicalCancer():
         }
     )
 
-    # Add transitions for Breast Cancer state
+    # Add transitions for invasive cervical cancer state
     cervical_cancer.allow_self_transitions()
     cervical_cancer.add_transition(
         recovered,
