@@ -3,15 +3,13 @@ components:
         population:
             - BasePopulation()
             - Mortality()
-        metrics:
-            - DisabilityObserver()
-            - MortalityObserver()
 
-    # Causes an error if left empty. Uncomment when you have components. 
     vivarium_csu_swissre_cervical_cancer.components:
         - CervicalCancer()
-    #    - MortalityObserver()
-    #    - DisabilityObserver()
+
+        - MortalityObserver()
+        - DisabilityObserver()
+        - StateMachineObserver('cervical_cancer')
 
 configuration:
     input_data:
@@ -46,9 +44,13 @@ configuration:
     metrics:
         disability:
             by_age: False
-            by_sex: True
+            by_sex: False
             by_year: True
         mortality:
             by_age: False
-            by_sex: True
+            by_sex: False
+            by_year: True
+        cervical_cancer:
+            by_age: False
+            by_sex: False
             by_year: True
