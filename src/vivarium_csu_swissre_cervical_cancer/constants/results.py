@@ -28,24 +28,17 @@ THROWAWAY_COLUMNS = [f'{state}_event_count' for state in models.STATES]
 
 # TODO - clean up family history from below
 TOTAL_POPULATION_COLUMN_TEMPLATE = 'total_population_{POP_STATE}'
-PERSON_TIME_COLUMN_TEMPLATE = ('person_time_in_{YEAR}_among_{SEX}_age_cohort_{AGE_COHORT}_family_history_{HISTORY}'
-                               '_screening_result_{SCREENING_STATE}')
-DEATH_COLUMN_TEMPLATE = ('death_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_among_{SEX}_age_cohort_{AGE_COHORT}'
-                         '_family_history_{HISTORY}_screening_result_{SCREENING_STATE}')
-YLLS_COLUMN_TEMPLATE = ('ylls_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_among_{SEX}_age_cohort_{AGE_COHORT}'
-                        '_family_history_{HISTORY}_screening_result_{SCREENING_STATE}')
-YLDS_COLUMN_TEMPLATE = ('ylds_due_to_{CAUSE_OF_DISABILITY}_in_{YEAR}_among_{SEX}_age_cohort_{AGE_COHORT}'
-                        '_family_history_{HISTORY}')
-DISEASE_STATE_PERSON_TIME_COLUMN_TEMPLATE = ('{DISEASE_STATE}_person_time_in_{YEAR}_among_{SEX}_age_cohort_{AGE_COHORT}'
-                                             '_family_history_{HISTORY}_screening_result_{SCREENING_STATE}')
-SCREENING_STATE_PERSON_TIME_COLUMN_TEMPLATE = ('{SCREENING_STATE}_person_time_in_{YEAR}_among_{SEX}'
-                                               '_age_cohort_{AGE_COHORT}_family_history_{HISTORY}')
-DISEASE_TRANSITION_COUNT_COLUMN_TEMPLATE = ('{DISEASE_TRANSITION}_event_count_in_{YEAR}_among_{SEX}'
-                                            '_age_cohort_{AGE_COHORT}_family_history_{HISTORY}'
-                                            '_screening_result_{SCREENING_STATE}')
-SCREENING_TRANSITION_COUNT_COLUMN_TEMPLATE = ('{SCREENING_TRANSITION}_event_count_in_{YEAR}_among_{SEX}'
-                                              '_age_cohort_{AGE_COHORT}_family_history_{HISTORY}')
-EVENT_COUNT_COLUMN_TEMPLATE = '{EVENT}_in_{YEAR}_among_{SEX}_age_cohort_{AGE_COHORT}_family_history_{HISTORY}'
+PERSON_TIME_COLUMN_TEMPLATE = 'person_time_in_{YEAR}_age_cohort_{AGE_COHORT}'
+DEATH_COLUMN_TEMPLATE = 'death_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_age_cohort_{AGE_COHORT}'
+YLLS_COLUMN_TEMPLATE = 'ylls_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_age_cohort_{AGE_COHORT}'
+YLDS_COLUMN_TEMPLATE = 'ylds_due_to_{CAUSE_OF_DISABILITY}_in_{YEAR}_age_cohort_{AGE_COHORT}'
+DISEASE_STATE_PERSON_TIME_COLUMN_TEMPLATE = '{DISEASE_STATE}_person_time_in_{YEAR}_age_cohort_{AGE_COHORT}'
+# SCREENING_STATE_PERSON_TIME_COLUMN_TEMPLATE = ('{SCREENING_STATE}_person_time_in_{YEAR}_among_{SEX}'
+#                                                '_age_cohort_{AGE_COHORT}')
+DISEASE_TRANSITION_COUNT_COLUMN_TEMPLATE = '{DISEASE_TRANSITION}_event_count_in_{YEAR}_age_cohort_{AGE_COHORT}'
+# SCREENING_TRANSITION_COUNT_COLUMN_TEMPLATE = ('{SCREENING_TRANSITION}_event_count_in_{YEAR}_among_{SEX}'
+#                                               '_age_cohort_{AGE_COHORT}')
+# EVENT_COUNT_COLUMN_TEMPLATE = '{EVENT}_in_{YEAR}_among_{SEX}_age_cohort_{AGE_COHORT}'
 
 COLUMN_TEMPLATES = {
     'population': TOTAL_POPULATION_COLUMN_TEMPLATE,
@@ -56,15 +49,14 @@ COLUMN_TEMPLATES = {
     'disease_state_person_time': DISEASE_STATE_PERSON_TIME_COLUMN_TEMPLATE,
     # 'screening_state_person_time': SCREENING_STATE_PERSON_TIME_COLUMN_TEMPLATE,
     'disease_transition_count': DISEASE_TRANSITION_COUNT_COLUMN_TEMPLATE,
-    'screening_transition_count': SCREENING_TRANSITION_COUNT_COLUMN_TEMPLATE,
-    'event_count': EVENT_COUNT_COLUMN_TEMPLATE,
+    # 'screening_transition_count': SCREENING_TRANSITION_COUNT_COLUMN_TEMPLATE,
+    # 'event_count': EVENT_COUNT_COLUMN_TEMPLATE,
 }
 
 NON_COUNT_TEMPLATES = [
 ]
 
 POP_STATES = ('living', 'dead', 'tracked', 'untracked')
-SEXES = ('male', 'female')
 YEARS = tuple(range(2020, 2040))
 AGE_COHORTS = tuple(f'{2020 - (x + 5)}_to_{2020 - x}' for x in range(15, 85, 5))
 # EVENTS = (SCREENING_SCHEDULED, SCREENING_ATTENDED)
@@ -74,7 +66,6 @@ CAUSES_OF_DISABILITY = (models.INVASIVE_CANCER_STATE_NAME,)
 TEMPLATE_FIELD_MAP = {
     'POP_STATE': POP_STATES,
     'YEAR': YEARS,
-    'SEX': SEXES,
     'AGE_COHORT': AGE_COHORTS,
     'CAUSE_OF_DEATH': CAUSES_OF_DEATH,
     'CAUSE_OF_DISABILITY': CAUSES_OF_DISABILITY,
