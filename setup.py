@@ -32,7 +32,7 @@ if __name__ == "__main__":
     # use "pip install -e .[dev]" to install required components + extra components
     extras_require = [
         'vivarium-gbd-access>=2.0.2',
-        'vivarium_cluster_tools==1.2.0',
+        'vivarium_cluster_tools>=1.2.1',
         'vivarium_inputs[data]==3.1.1',
     ]
 
@@ -63,5 +63,6 @@ if __name__ == "__main__":
             [console_scripts]
             make_specs=vivarium_csu_swissre_cervical_cancer.tools.cli:make_specs
             make_artifacts=vivarium_csu_swissre_cervical_cancer.tools.cli:make_artifacts
+            make_results=vivarium_csu_swissre_cervical_cancer.tools.cli:make_results
         '''
     )
