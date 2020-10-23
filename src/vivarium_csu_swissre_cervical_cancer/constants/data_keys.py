@@ -40,16 +40,18 @@ POPULATION = __Population()
 class __CervicalCancer(NamedTuple):
     HRHPV_PREVALENCE: TargetString = TargetString('sequela.high_risk_hpv.prevalence')
     BCC_PREVALENCE: TargetString = TargetString('sequela.benign_cervical_cancer.prevalence')
-    PREVALENCE: TargetString = TargetString('cause.cervical_cancer.prevalence')
+    BCC_PREVALENCE_WITH_HRHPV: TargetString = TargetString('sequela.benign_cervical_cancer_with_hpv.prevalence')
+    PREVALENCE: TargetString = TargetString('cause.invasive_cervical_cancer.prevalence')
+    PREVALENCE_WITH_HRHPV: TargetString = TargetString('cause.invasive_cervical_cancer_with_hpv.prevalence')
     HRHPV_INCIDENCE_RATE: TargetString = TargetString('sequela.high_risk_hpv.incidence_rate')
     HRHPV_REMISSION_RATE: TargetString = TargetString('sequela.high_risk_hpv.remission_rate')
     BCC_HPV_POS_INCIDENCE_RATE: TargetString = TargetString(
         'sequela.hpv_positive_benign_cervical_cancer.incidence_rate')
     BCC_HPV_NEG_INCIDENCE_RATE: TargetString = TargetString(
         'sequela.hpv_negative_benign_cervical_cancer.incidence_rate')
-    INCIDENCE_RATE: TargetString = TargetString('cause.cervical_cancer.incidence_rate')
-    DISABILITY_WEIGHT: TargetString = TargetString('cause.cervical_cancer.disability_weight')
-    EMR: TargetString = TargetString('cause.cervical_cancer.excess_mortality_rate')
+    INCIDENCE_RATE: TargetString = TargetString('cause.invasive_cervical_cancer.incidence_rate')
+    DISABILITY_WEIGHT: TargetString = TargetString('cause.invasive_cervical_cancer.disability_weight')
+    EMR: TargetString = TargetString('cause.invasive_cervical_cancer.excess_mortality_rate')
     CSMR: TargetString = TargetString('cause.cervical_cancer.cause_specific_mortality_rate')
     RESTRICTIONS: TargetString = TargetString('cause.cervical_cancer.restrictions')
 
