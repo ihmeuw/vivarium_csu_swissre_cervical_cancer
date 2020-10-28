@@ -1,2 +1,3 @@
 from vivarium_csu_swissre_cervical_cancer.components.disease import CervicalCancer
 from vivarium_csu_swissre_cervical_cancer.components.observers import MortalityObserver, DisabilityObserver, StateMachineObserver
+from vivarium_csu_swissre_cervical_cancer.components.screening import ScreeningAlgorithm

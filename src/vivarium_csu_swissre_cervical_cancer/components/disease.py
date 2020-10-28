@@ -47,8 +47,25 @@ def CervicalCancer():
             'excess_mortality_rate': lambda *_: 0,
         },
     )
+    bcc_with_hrhpv = DiseaseState(
+        models.BENIGN_CANCER_WITH_HPV_STATE_NAME,
+        cause_type='sequela',
+        get_data_functions={
+            'disability_weight': lambda *_: 0,
+            'excess_mortality_rate': lambda *_: 0,
+        },
+    )
     cervical_cancer = DiseaseState(
         models.INVASIVE_CANCER_STATE_NAME,
+    )
+    cervical_cancer_with_hrhpv = DiseaseState(
+        models.INVASIVE_CANCER_WITH_HPV_STATE_NAME,
+        get_data_functions={
+            'disability_weight': lambda _, builder: builder.data.load(
+                data_keys.CERVICAL_CANCER.DISABILITY_WEIGHT),
+            'excess_mortality_rate': lambda _, builder: builder.data.load(
+                data_keys.CERVICAL_CANCER.EMR),
+        },
     )
     recovered = RecoveredState(models.CERVICAL_CANCER_MODEL_NAME)
 
@@ -72,14 +89,13 @@ def CervicalCancer():
     # Add transitions for hrHPV state
     hrhpv.allow_self_transitions()
     hrhpv.add_transition(
-        bcc,
+        bcc_with_hrhpv,
         source_data_type='rate',
         get_data_functions={
             'transition_rate':
                 lambda builder, *_: builder.data.load(data_keys.CERVICAL_CANCER.BCC_HPV_POS_INCIDENCE_RATE)
         }
     )
-    hrhpv.allow_self_transitions()
     hrhpv.add_transition(
         susceptible,
         source_data_type='rate',
@@ -89,7 +105,7 @@ def CervicalCancer():
         }
     )
 
-    # Add transitions for benign cervical cancer state
+    # Add transitions for benign cervical cancer *without* hrhpv state
     bcc.allow_self_transitions()
     bcc.add_transition(
         cervical_cancer,
@@ -99,8 +115,35 @@ def CervicalCancer():
                 lambda builder, *_: builder.data.load(models.CERVICAL_CANCER.INCIDENCE_RATE)
         }
     )
+    bcc.add_transition(
+        bcc_with_hrhpv,
+        source_data_type='rate',
+        get_data_functions={
+            'transition_rate':
+                lambda builder, *_: builder.data.load(data_keys.CERVICAL_CANCER.HRHPV_INCIDENCE_RATE)
+        }
+    )
 
-    # Add transitions for invasive cervical cancer state
+    # Add transitions for benign cervical cancer *with* hrhpv state
+    bcc_with_hrhpv.allow_self_transitions()
+    bcc_with_hrhpv.add_transition(
+        cervical_cancer_with_hrhpv,
+        source_data_type='rate',
+        get_data_functions={
+            'transition_rate':
+                lambda builder, *_: builder.data.load(models.CERVICAL_CANCER.INCIDENCE_RATE)
+        }
+    )
+    bcc_with_hrhpv.add_transition(
+        bcc,
+        source_data_type='rate',
+        get_data_functions={
+            'transition_rate':
+                lambda builder, *_: builder.data.load(data_keys.CERVICAL_CANCER.HRHPV_REMISSION_RATE)
+        }
+    )
+
+    # Add transitions for invasive cervical cancer *without* hrhpv state
     cervical_cancer.allow_self_transitions()
     cervical_cancer.add_transition(
         recovered,
@@ -110,8 +153,36 @@ def CervicalCancer():
                 lambda *_: data_values.REMISSION_RATE
         }
     )
+    cervical_cancer.add_transition(
+        cervical_cancer_with_hrhpv,
+        source_data_type='rate',
+        get_data_functions={
+            'transition_rate':
+                lambda builder, *_: builder.data.load(data_keys.CERVICAL_CANCER.HRHPV_INCIDENCE_RATE)
+        }
+    )
+
+    # Add transitions for invasive cervical cancer *with* hrhpv state
+    cervical_cancer_with_hrhpv.allow_self_transitions()
+    cervical_cancer_with_hrhpv.add_transition(
+        recovered,
+        source_data_type='rate',
+        get_data_functions={
+            'transition_rate':
+                lambda *_: data_values.REMISSION_RATE
+        }
+    )
+    cervical_cancer_with_hrhpv.add_transition(
+        cervical_cancer,
+        source_data_type='rate',
+        get_data_functions={
+            'transition_rate':
+                lambda builder, *_: builder.data.load(data_keys.CERVICAL_CANCER.HRHPV_REMISSION_RATE)
+        }
+    )
 
     # Add transitions for Recovered state
     recovered.allow_self_transitions()
 
-    return DiseaseModel('cervical_cancer', states=[susceptible, hrhpv, bcc, cervical_cancer, recovered])
+    return DiseaseModel('cervical_cancer', states=[susceptible, hrhpv, bcc, bcc_with_hrhpv,
+                                                   cervical_cancer, cervical_cancer_with_hrhpv, recovered])

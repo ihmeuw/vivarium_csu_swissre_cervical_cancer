@@ -62,7 +62,9 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         data_keys.CERVICAL_CANCER.HRHPV_REMISSION_RATE: load_hrhpv_remission,
         data_keys.CERVICAL_CANCER.HRHPV_PREVALENCE: load_prevalence,
         data_keys.CERVICAL_CANCER.BCC_PREVALENCE: load_prevalence,
+        data_keys.CERVICAL_CANCER.BCC_PREVALENCE_WITH_HRHPV: load_prevalence,
         data_keys.CERVICAL_CANCER.PREVALENCE: load_prevalence,
+        data_keys.CERVICAL_CANCER.PREVALENCE_WITH_HRHPV: load_prevalence,
         data_keys.CERVICAL_CANCER.HRHPV_INCIDENCE_RATE: load_incidence_rate,
         data_keys.CERVICAL_CANCER.BCC_HPV_POS_INCIDENCE_RATE: load_incidence_rate,
         data_keys.CERVICAL_CANCER.BCC_HPV_NEG_INCIDENCE_RATE: load_incidence_rate,
@@ -125,10 +127,10 @@ def load_standard_data(key: str, location: str) -> pd.DataFrame:
 def load_metadata(key: str, location: str):
     key = EntityKey(key)
     entity = get_entity(key)
-    metadata = entity[key.measure]
-    if hasattr(metadata, 'to_dict'):
-        metadata = metadata.to_dict()
-    return metadata
+    md = entity[key.measure]
+    if hasattr(md, 'to_dict'):
+        md = md.to_dict()
+    return md
 
 
 def load_acmr(key: str, location: str) -> pd.DataFrame:
@@ -138,7 +140,9 @@ def load_acmr(key: str, location: str) -> pd.DataFrame:
 def load_prevalence(key: str, location: str) -> pd.DataFrame:
     """Computes prevalence values for key at location."""
     base_prevalence = _transform_raw_data(location, paths.RAW_PREVALENCE_DATA_PATH, False)
-    if key == data_keys.CERVICAL_CANCER.BCC_PREVALENCE:
+    hrhpv_prev = _load_hrhpv_raw(paths.HRHPV_PREVALENCE_PATH)
+    hrhpv_rr = load_rr_hrhpv(base_prevalence.columns)
+    if key in [data_keys.CERVICAL_CANCER.BCC_PREVALENCE, data_keys.CERVICAL_CANCER.BCC_PREVALENCE_WITH_HRHPV]:
         # Read from CSV, data from model document
         prev_ratio = pd.read_csv(paths.BCC_PREVALENCE_RATIO_PATH)
         prev_ratio["age_start"], prev_ratio["age_end"] = [pd.to_numeric(col) for col in
@@ -153,20 +157,30 @@ def load_prevalence(key: str, location: str) -> pd.DataFrame:
             .reset_index()
             .set_index(ARTIFACT_INDEX_COLUMNS)
         )
-        return _expand_age_bins(base_prevalence)
-    elif key == data_keys.CERVICAL_CANCER.PREVALENCE:
-        prev_ratio = 1
-        rv = base_prevalence * prev_ratio
-        return _expand_age_bins(rv)
+        prev_bcc_without_hrhpv = base_prevalence / (hrhpv_rr + 1)
+        if key == data_keys.CERVICAL_CANCER.BCC_PREVALENCE:
+            return _expand_age_bins(prev_bcc_without_hrhpv)
+        else:  # BCC with HRHPV
+            prev_bcc_with_hrhpv = base_prevalence - prev_bcc_without_hrhpv
+            return _expand_age_bins(prev_bcc_with_hrhpv)
+    elif key in [data_keys.CERVICAL_CANCER.PREVALENCE, data_keys.CERVICAL_CANCER.PREVALENCE_WITH_HRHPV]:
+        prev_icc_without_hrhpv = base_prevalence / (hrhpv_rr + 1)
+        if key == data_keys.CERVICAL_CANCER.PREVALENCE:
+            return _expand_age_bins(prev_icc_without_hrhpv)
+        else:  # ICC with HRHPV
+            prev_icc_with_hrhpv = base_prevalence - prev_icc_without_hrhpv
+            return _expand_age_bins(prev_icc_with_hrhpv)
     elif key == data_keys.CERVICAL_CANCER.HRHPV_PREVALENCE:
-        return _load_hrhpv_raw(paths.HRHPV_PREVALENCE_PATH)
+        return hrhpv_prev
     else:
         raise ValueError(f'Unrecognized key {key}')
 
 
 def load_rr_hrhpv(columns) -> pd.Series:
     """Get random variables based on distribution for RR hrHPV, columns should be those in the prevalence df"""
-    per_draw_rr = pd.Series([utilities.get_lognormal_random_variable(*data_values.RR_HRHPV_PARAMS, x) for x in range(0, 1000)], index=columns)
+    per_draw_rr = pd.Series(
+        [utilities.get_lognormal_random_variable(*data_values.RR_HRHPV_PARAMS, x) for x in range(0, 1000)],
+        index=columns)
     return per_draw_rr
 
 
@@ -187,8 +201,8 @@ def load_paf(prev, rr) -> pd.DataFrame:
 
 def load_incidence_rate(key: str, location: str) -> pd.DataFrame:
     """Get the incidence rate given a key."""
-    bcc_prevalence = load_prevalence(data_keys.CERVICAL_CANCER.BCC_PREVALENCE,
-                                     location)  # TODO: optimization: check artifact for this instead of rebuilding
+    bcc_prevalence = (load_prevalence(data_keys.CERVICAL_CANCER.BCC_PREVALENCE, location)
+                      + load_prevalence(data_keys.CERVICAL_CANCER.BCC_PREVALENCE_WITH_HRHPV, location))
     if key == data_keys.CERVICAL_CANCER.INCIDENCE_RATE:
         # i_ICC = (incidence_c432/prev_BCC)
         incidence_rate = _transform_raw_data(location, paths.RAW_INCIDENCE_RATE_DATA_PATH, False)

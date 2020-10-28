@@ -3,6 +3,7 @@ import typing
 import pandas as pd
 
 from vivarium_csu_swissre_cervical_cancer import models, data_values, scenarios
+from vivarium_csu_swissre_cervical_cancer.utilities import get_normal_dist_random_variable
 
 
 if typing.TYPE_CHECKING:
@@ -47,14 +48,14 @@ class ScreeningAlgorithm:
 
         draw = builder.configuration.input_data.input_draw_number
         self.screening_parameters = {parameter.name: parameter.get_random_variable(draw)
-                                     for parameter in models.SCREENING}
+                                     for parameter in data_values.SCREENING}
 
-        required_columns = [AGE, SEX, models.CERVICAL_CANCER_MODEL_NAME]
+        required_columns = [AGE, models.CERVICAL_CANCER_MODEL_NAME]
         columns_created = [
             models.SCREENING_RESULT_MODEL_NAME,
-            models.ATTENDED_LAST_SCREENING,
-            models.PREVIOUS_SCREENING_DATE,
-            models.NEXT_SCREENING_DATE,
+            data_values.ATTENDED_LAST_SCREENING,
+            data_values.PREVIOUS_SCREENING_DATE,
+            data_values.NEXT_SCREENING_DATE,
         ]
         builder.population.initializes_simulants(self.on_initialize_simulants,
                                                  creates_columns=columns_created,
@@ -69,7 +70,6 @@ class ScreeningAlgorithm:
         """Assign all simulants a next screening date. Also determine if they attended their previous screening"""
 
         pop = self.population_view.subview([
-            SEX,
             AGE,
         ]).get(pop_data.index)
 
@@ -77,21 +77,26 @@ class ScreeningAlgorithm:
                                      index=pop.index,
                                      name=models.SCREENING_RESULT_MODEL_NAME)
 
-        female_under_21 = (pop.loc[:, SEX] == 'Female') & (pop.loc[:, AGE] < 21)
-        female_21_to_65 = (pop.loc[:, SEX] == 'Female') & (pop.loc[:, AGE] < 66) & (pop.loc[:, AGE] > 20)
+        age = pop.loc[:, AGE]
+        under_screening_age = age < data_values.FIRST_SCREENING_AGE
+        within_screening_age = (
+                (age <= data_values.LAST_SCREENING_AGE)
+                & (age >= data_values.FIRST_SCREENING_AGE)
+        )
 
         # Get beginning time for screening of all individuals
-        #  - never for simulants over 65
-        #  - beginning of sim for women between 21 & 65
-        #  - 21st birthday for women younger than 21
+        #  - never for simulants over LAST_SCREENING_AGE
+        #  - beginning of sim for women between FIRST_SCREENING_AGE & LAST_SCREENING_AGE
+        #  - FIRST_SCREENING_AGE-st birthday for women younger than FIRST_SCREENING_AGE
         screening_start = pd.Series(pd.NaT, index=pop.index)
-        screening_start.loc[female_21_to_65] = self.clock()
-        screening_start.loc[female_under_21] = (
-                screening_start.loc[female_under_21] + pd.to_timedelta(30 - pop.loc[female_under_21, AGE], unit='Y')
+        screening_start.loc[within_screening_age] = self.clock()
+        screening_start.loc[under_screening_age] = (
+                screening_start.loc[under_screening_age]
+                + pd.to_timedelta(data_values.FIRST_SCREENING_AGE - age[under_screening_age], unit='Y')
         )
 
         # Draw a duration between screenings to use for scheduling the first screening
-        time_between_screenings = self._schedule_screening(screening_start, screening_result) - screening_start
+        time_between_screenings = self._schedule_screening(screening_start, screening_result, age) - screening_start
 
         # Determine how far along between screenings we are the time screening starts
         progress_to_next_screening = self.randomness.get_draw(pop.index, 'progress_to_next_screening')
@@ -102,7 +107,7 @@ class ScreeningAlgorithm:
         next_screening = pd.Series(previous_screening + time_between_screenings,
                                    name=data_values.NEXT_SCREENING_DATE)
         # Remove the "appointment" used to determine the first appointment after turning 21
-        previous_screening.loc[female_under_21] = pd.NaT
+        previous_screening.loc[under_screening_age] = pd.NaT
 
         attended_previous = pd.Series(self.randomness.get_draw(pop.index, 'attended_previous')
                                       < self.screening_parameters[data_values.SCREENING.BASE_ATTENDANCE.name],
@@ -117,6 +122,7 @@ class ScreeningAlgorithm:
         # Get all simulants with a screening scheduled during this timestep
         pop = self.population_view.get(event.index, query='alive == "alive"')
         screening_scheduled = pop.loc[:, data_values.NEXT_SCREENING_DATE] < self.clock()
+        age = pop.loc[:, AGE]
 
         # Get probability of attending the next screening for scheduled simulants
         p_attends_screening = self._get_screening_attendance_probability(pop)
@@ -132,8 +138,8 @@ class ScreeningAlgorithm:
         attended_last_screening = attended_last_screening.astype(bool)
 
         # Screening results for everyone
-        screening_result = pop.loc[:, data_values.SCREENING_RESULT_MODEL_NAME].copy()
-        screening_result.loc[attends_screening] = self._do_screening(pop.loc[attends_screening, :])
+        screening_result = pop.loc[:, models.SCREENING_RESULT_MODEL_NAME].copy()
+        screening_result[attends_screening] = self._do_screening(pop.loc[attends_screening, :])
 
         # Update previous screening column
         previous_screening = pop.loc[:, data_values.PREVIOUS_SCREENING_DATE].copy()
@@ -143,7 +149,9 @@ class ScreeningAlgorithm:
         next_screening = pop.loc[:, data_values.NEXT_SCREENING_DATE].copy()
         next_screening.loc[screening_scheduled] = self._schedule_screening(
             pop.loc[screening_scheduled, data_values.NEXT_SCREENING_DATE],
-            screening_result.loc[screening_scheduled])
+            screening_result.loc[screening_scheduled],
+            age
+        )
 
         # Update values
         self.population_view.update(
@@ -151,23 +159,29 @@ class ScreeningAlgorithm:
         )
 
     def _get_screening_attendance_probability(self, pop: pd.DataFrame) -> pd.Series:
-        # Get base probability of screening attendance based on the current date
-        screening_start_attended_previous = self.screening_parameters[
-            data_values.SCREENING.START_ATTENDED_PREV_ATTENDANCE.name
+        base_first_screening_attendance = self.screening_parameters[
+            data_values.SCREENING.BASE_ATTENDANCE.name
         ]
-        screening_start_not_attended_previous = self.screening_parameters[
-            data_values.SCREENING.START_NOT_ATTENDED_PREV_ATTENDANCE.name
+        attended_previous_screening_multiplier = self.screening_parameters[
+            data_values.SCREENING.ATTENDED_PREVIOUS_SCREENING_MULTIPLIER.name
         ]
-        screening_end_attended_previous = self.screening_parameters[
-            data_values.SCREENING.END_ATTENDED_PREV_ATTENDANCE.name
-        ]
-        screening_end_not_attended_previous = self.screening_parameters[
-            data_values.SCREENING.END_NOT_ATTENDED_PREV_ATTENDANCE.name
-        ]
+
+        # Derivation where p1 == prob attends screening given attended previous,
+        # p2 == prob attends screening given didn't attend previous, p == prob attends screening,
+        # and m == multiplier drawn from ~1.89
+        # p1 = m * p2
+        # p = p1 * p + p2 * (1 - p)
+        # p = m * p2 * p + p2 * (1 - p)
+        # p = p2 * (m * p + 1 - p) = p2 * (1 + (m - 1) * p)
+        # p2 = p / (1 + p * (m - 1))
+        screening_not_attended_previous = base_first_screening_attendance / (
+                1 + base_first_screening_attendance * (attended_previous_screening_multiplier - 1))
+        screening_attended_previous = attended_previous_screening_multiplier * screening_not_attended_previous
+
         if self.scenario == scenarios.SCENARIOS.baseline:
             conditional_probabilities = {
-                True: screening_start_attended_previous,
-                False: screening_start_not_attended_previous,
+                True: screening_attended_previous,
+                False: screening_not_attended_previous,
             }
         # else:
         #     if self.clock() < project_globals.RAMP_UP_START:
@@ -195,56 +209,116 @@ class ScreeningAlgorithm:
 
     def _do_screening(self, pop: pd.Series) -> pd.Series:
         """Perform screening for all simulants who attended their screening"""
-        screened = (21 <= pop.loc[:, AGE]) & (pop.loc[:, AGE] < 65)
+        screened = ((data_values.FIRST_SCREENING_AGE <= pop.loc[:, AGE])
+                   & (pop.loc[:, AGE] < data_values.LAST_SCREENING_AGE))
         in_remission = pop.loc[:, models.CERVICAL_CANCER_MODEL_NAME] == models.RECOVERED_STATE_NAME
-        has_lcis_dcis = pop.loc[:, models.SCREENING_RESULT_MODEL_NAME].isin([
-            models.POSITIVE_LCIS_STATE_NAME,
-            models.POSITIVE_DCIS_STATE_NAME
+        no_cancer = pop.loc[:, models.SCREENING_RESULT_MODEL_NAME].isin([
+            models.NEGATIVE_STATE_NAME,
+            models.POSITIVE_HRHPV_STATE_NAME
         ])
 
-        screened_remission = screened & in_remission
-        twentysomething = (21 <= pop.loc[:, AGE]) & (pop.loc[:, AGE] < 30)
-        cotest_eligible = (30 <= pop.loc[:, AGE]) & (pop.loc[:, AGE] < 65)
+        twentysomething = ((data_values.FIRST_SCREENING_AGE <= pop.loc[:, AGE])
+                           & (pop.loc[:, AGE] < data_values.MID_SCREENING_AGE))
+        cotest_eligible = ((data_values.MID_SCREENING_AGE <= pop.loc[:, AGE])
+                           & (pop.loc[:, AGE] < data_values.LAST_SCREENING_AGE))
+        # TODO: check/ensure these are mutually exclusive groups
+        cotesters = no_cancer & cotest_eligible & screened
+        screened_remission = screened & in_remission & ~cotesters
+        cytologists = (~no_cancer | twentysomething) & (~in_remission & screened)
 
         # Get sensitivity values for all individuals
-        # TODO address different sensitivity values for tests of different conditions
-        sensitivity = pd.Series(0.0, index=pop.index)
-        sensitivity.loc[screened_remission] = self.screening_parameters[
+        cancer_sensitivity = pd.Series(0.0, index=pop.index)
+        cancer_sensitivity.loc[screened_remission] = self.screening_parameters[
             data_values.SCREENING.REMISSION_SENSITIVITY.name
         ]
-        sensitivity.loc[~in_remission & twentysomething] = self.screening_parameters[
+        cancer_sensitivity.loc[cytologists] = self.screening_parameters[
             data_values.SCREENING.CYTOLOGY_SENSITIVITY.name
         ]
-        sensitivity.loc[~in_remission & cotest_eligible] = self.screening_parameters[
-            data_values.SCREENING.REMISSION_SENSITIVITY.name
+        cancer_sensitivity.loc[cotesters] = self.screening_parameters[
+            data_values.SCREENING.COTEST_CC_SPECIFICITY.name
         ]
-        # TODO: how to handle hrHPV and CC sensitivities / split out by disease state?
 
-        # TODO: add in hrHPV specificity when defined as something other than 100%
+        hrhpv_sensitivity = pd.Series(0.0, index=pop.index)
+        hrhpv_sensitivity.loc[screened_remission] = 0
+        hrhpv_sensitivity.loc[cytologists] = 0
+        hrhpv_sensitivity.loc[cotesters] = self.screening_parameters[
+            data_values.SCREENING.COTEST_HPV_SENSITIVITY.name
+        ]
+        hrhpv_specificity = pd.Series(0.0, index=pop.index)
+        hrhpv_specificity.loc[screened_remission] = 0
+        hrhpv_specificity.loc[cytologists] = 0
+        hrhpv_specificity.loc[cotesters] = self.screening_parameters[
+            data_values.SCREENING.COTEST_HPV_SPECIFICITY.name
+        ]
+
+        true_pos_hrhpv = pop.loc[:, models.CERVICAL_CANCER_MODEL_NAME].isin([
+            models.HIGH_RISK_HPV_STATE_NAME,
+            models.BENIGN_CANCER_WITH_HPV_STATE_NAME,
+            models.INVASIVE_CANCER_WITH_HPV_STATE_NAME
+        ])
+        true_neg_hrhpv = pop.loc[:, models.CERVICAL_CANCER_MODEL_NAME].isin([
+            models.SUSCEPTIBLE_STATE_NAME,
+            models.BENIGN_CANCER_STATE_NAME,
+            models.INVASIVE_CANCER_STATE_NAME
+        ])
 
         # Perform screening on those who attended screening
-        accurate_results = self.randomness.get_draw(pop.index, 'sensitivity') < sensitivity
+        accurate_results_hrhpv = pd.Series(True, index=pop.index)
+        accurate_results_hrhpv[true_pos_hrhpv] = (
+                self.randomness.get_draw(
+                    pop.index, 'hrhpv_sensitivity')[true_pos_hrhpv] < hrhpv_sensitivity[true_pos_hrhpv])
+        accurate_results_hrhpv[true_neg_hrhpv] = (
+                self.randomness.get_draw(
+                    pop.index, 'hrhpv_specificity')[true_neg_hrhpv] < hrhpv_specificity[true_neg_hrhpv])
+        accurate_results_hrhpv = accurate_results_hrhpv.astype(bool)
+
+        accurate_results_cancer = self.randomness.get_draw(pop.index, 'cancer_sensitivity') < cancer_sensitivity
 
         # Screening results for everyone who was screened
-        screening_result = pop.loc[:, models.SCREENING_RESULT_MODEL_NAME].copy()
-        screening_result.loc[accurate_results] = (
-            pop.loc[accurate_results, models.CERVICAL_CANCER_MODEL_NAME]
-            .apply(models.get_screened_state)
-        )
-        return screening_result
+        # HRHPV accurate -> set to model's true state
+        # HRHPV inaccurate -> set to logical-not of the model's true state
+        is_screened_hrhpv_pos = pd.Series(False, index=pop.index)
+        is_screened_hrhpv_pos[accurate_results_hrhpv] = pop.loc[
+            accurate_results_hrhpv, models.CERVICAL_CANCER_MODEL_NAME].isin(models.HPV_POS_STATES)
+        is_screened_hrhpv_pos[~accurate_results_hrhpv] = ~(pop.loc[
+            ~accurate_results_hrhpv, models.CERVICAL_CANCER_MODEL_NAME].isin(models.HPV_POS_STATES))
+        is_screened_hrhpv_pos = is_screened_hrhpv_pos.astype(bool)
 
-    def _schedule_screening(self, previous_screening: pd.Series, screening_result: pd.Series) -> pd.Series:
+        # Cancer accurate -> set to model's true state
+        # Cancer inaccurate -> remain at previous screened state
+        screened_cancer_state = pd.Series(models.SCREENING_CANCER_NEGATIVE_STATE, index=pop.index)
+        screened_cancer_state[accurate_results_cancer] = pop.loc[
+            accurate_results_cancer, models.CERVICAL_CANCER_MODEL_NAME].apply(models.get_screening_cancer_model_state)
+        screened_cancer_state[~accurate_results_cancer] = pop.loc[
+            ~accurate_results_cancer, models.SCREENING_RESULT_MODEL_NAME].apply(
+            models.get_screening_result_cancer_model_state)
+
+        combined_screened_state = pd.concat([is_screened_hrhpv_pos, screened_cancer_state], axis=1)
+        return combined_screened_state.apply(models.get_combined_screening_result, raw=False, axis=1)
+
+    def _schedule_screening(self, previous_screening: pd.Series,
+                            screening_result: pd.Series, age: pd.Series) -> pd.Series:
         """Schedules follow up visits."""
-        has_had_lcis_dcis = (screening_result != models.NEGATIVE_STATE_NAME)
-        annual_screening = has_had_lcis_dcis
+        annual_screening = (screening_result != models.NEGATIVE_STATE_NAME)
+        triennial_screening = (age < data_values.MID_SCREENING_AGE) & (screening_result == models.NEGATIVE_STATE_NAME)
+        quinquennial_screening = (
+                (age >= data_values.MID_SCREENING_AGE)
+                & (age <= data_values.LAST_SCREENING_AGE)
+                & (screening_result == models.NEGATIVE_STATE_NAME))
         draw = self.randomness.get_draw(previous_screening.index, 'schedule_next')
 
         time_to_next_screening = pd.Series(None, previous_screening.index)
         time_to_next_screening.loc[annual_screening] = pd.to_timedelta(
             pd.Series(data_values.DAYS_UNTIL_NEXT_ANNUAL.ppf(draw), index=draw.index), unit='day'
         ).loc[annual_screening]
-        time_to_next_screening.loc[~annual_screening] = pd.to_timedelta(
-            pd.Series(data_values.DAYS_UNTIL_NEXT_BIENNIAL.ppf(draw), index=draw.index), unit='day'
-        ).loc[~annual_screening]
+        time_to_next_screening.loc[triennial_screening] = pd.to_timedelta(
+            pd.Series(get_normal_dist_random_variable(*data_values.DAYS_UNTIL_NEXT_TRIENNIAL, draw), index=draw.index),
+            unit='day'
+        ).loc[triennial_screening]
+        time_to_next_screening.loc[quinquennial_screening] = pd.to_timedelta(
+            pd.Series(get_normal_dist_random_variable(*data_values.DAYS_UNTIL_NEXT_QUINQUENNIAL, draw),
+                      index=draw.index),
+            unit='day'
+        ).loc[quinquennial_screening]
 
         return previous_screening + time_to_next_screening.astype('timedelta64[ns]')
