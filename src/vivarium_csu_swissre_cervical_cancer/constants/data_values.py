@@ -74,7 +74,7 @@ class __Screening(NamedTuple):
                                                    PROBABILITY_ATTENDING_FIRST_SCREENING_MEAN,
                                                    PROBABILITY_ATTENDING_FIRST_SCREENING_STDDEV,
                                                    key=PROBABILITY_ATTENDING_SCREENING_KEY)
-    # XXX: does this need to be a distribution? If so, Truncnorm bounds should be what?? (1, 2+)
+    # TODO: update ATTENDED_PREVIOUS_SCREENING_MULTIPLIER for research team's decision on distribution:
     ATTENDED_PREVIOUS_SCREENING_MULTIPLIER: TruncnormDist = TruncnormDist('attended_prev_screening_multiplier',
                                                                           ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_MEAN,
                                                                           ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_STDDEV,

@@ -12,7 +12,7 @@ from vivarium_public_health.metrics.utilities import (get_output_template, get_g
                                                       get_years_lived_with_disability, get_age_bins,
                                                       )
 
-from vivarium_csu_swissre_cervical_cancer import models, results
+from vivarium_csu_swissre_cervical_cancer import models, results, data_values
 
 if typing.TYPE_CHECKING:
     from vivarium.framework.engine import Builder
@@ -357,6 +357,77 @@ class StateMachineObserver:
 
     def __repr__(self) -> str:
         return f"StateMachineObserver({self.state_machine})"
+
+
+class ScreeningObserver:
+    """Observes screening appointments scheduled and attended"""
+    configuration_defaults = {
+        'metrics': {
+            'screening': {
+                'by_age': False,
+                'by_year': False,
+                'by_sex': False,
+            }
+        }
+    }
+
+    def __init__(self):
+        self.configuration_defaults = {
+            'metrics': {'screening': ScreeningObserver.configuration_defaults['metrics']['screening']}
+        }
+        self.stratifier = ResultsStratifier(self.name)
+
+    @property
+    def name(self) -> str:
+        return 'screening_observer'
+
+    @property
+    def sub_components(self) -> List[ResultsStratifier]:
+        return [self.stratifier]
+
+    # noinspection PyAttributeOutsideInit
+    def setup(self, builder: 'Builder'):
+        self.config = builder.configuration['metrics']['screening'].to_dict()
+        self.clock = builder.time.clock()
+        self.step_size = builder.time.step_size()
+        self.age_bins = get_age_bins(builder)
+        self.counts = Counter()
+
+        columns_required = [
+            'alive',
+            data_values.ATTENDED_LAST_SCREENING,
+            data_values.PREVIOUS_SCREENING_DATE,
+        ]
+        if self.config['by_age']:
+            columns_required += ['age']
+        if self.config['by_sex']:
+            columns_required += ['sex']
+        self.population_view = builder.population.get_view(columns_required)
+
+        builder.value.register_value_modifier('metrics', self.metrics)
+        builder.event.register_listener('collect_metrics', self.on_collect_metrics)
+
+    def on_collect_metrics(self, event: 'Event'):
+        pop = self.population_view.get(event.index)
+        for labels, pop_in_group in self.stratifier.group(pop):
+            scheduled_screening = (pop_in_group.loc[:, data_values.PREVIOUS_SCREENING_DATE]
+                                   > (self.clock() - self.step_size()))
+            attended_screening = scheduled_screening & pop_in_group.loc[:, data_values.ATTENDED_LAST_SCREENING]
+            year = f'in_{self.clock().year}'
+            counts_this_step = self.stratifier.update_labels(
+                {
+                    f'{results.SCREENING_SCHEDULED}_{year}': sum(scheduled_screening),
+                    f'{results.SCREENING_ATTENDED}_{year}': sum(attended_screening)
+                }, labels
+            )
+            self.counts.update(counts_this_step)
+
+    def metrics(self, index: pd.Index, metrics: Dict[str, float]):    # noqa
+        metrics.update(self.counts)
+        return metrics
+
+    def __repr__(self) -> str:
+        return 'ScreeningObserver'
 
 
 def get_state_person_time(pop: pd.DataFrame, config: Dict[str, bool],
