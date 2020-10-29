@@ -1,4 +1,5 @@
 from pathlib import Path
+from scipy.stats import norm
 from typing import Union, List
 
 import click
@@ -103,3 +104,8 @@ def delete_if_exists(*paths: Union[Path, List[Path]], confirm=False):
         for p in existing_paths:
             logger.info(f'Deleting artifact at {str(p)}.')
             p.unlink()
+
+
+def get_normal_dist_random_variable(mean: float, stddev: float, draw: int) -> float:
+    return norm(loc=mean, scale=stddev).ppf(draw)
+

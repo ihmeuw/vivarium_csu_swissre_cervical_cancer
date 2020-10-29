@@ -6,10 +6,11 @@ components:
 
     vivarium_csu_swissre_cervical_cancer.components:
         - CervicalCancer()
-
+        - ScreeningAlgorithm()
         - MortalityObserver()
         - DisabilityObserver()
         - StateMachineObserver('cervical_cancer')
+        - ScreeningObserver()
 
 configuration:
     input_data:
