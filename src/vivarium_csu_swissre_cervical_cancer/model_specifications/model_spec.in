@@ -10,6 +10,8 @@ components:
         - MortalityObserver()
         - DisabilityObserver()
         - StateMachineObserver('cervical_cancer')
+        - StateMachineObserver('screening_result', 'False')
+
         - ScreeningObserver()
 
 configuration:

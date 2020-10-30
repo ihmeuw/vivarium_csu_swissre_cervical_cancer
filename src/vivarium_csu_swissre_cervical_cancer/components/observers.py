@@ -55,8 +55,8 @@ class ResultsStratifier:
                            for age_cohort in results.AGE_COHORTS},
         }
 
-        # if self.has_screening_state:
-        #     columns_required.append(project_globals.SCREENING_RESULT_MODEL_NAME)
+        if self.has_screening_state:
+            columns_required.append(models.SCREENING_RESULT_MODEL_NAME)
 
         self.population_view = builder.population.get_view(columns_required)
         self.pipeline_values = {pipeline: None for pipeline in self.pipelines}
@@ -67,17 +67,17 @@ class ResultsStratifier:
                                                  requires_columns=columns_required,
                                                  requires_values=list(self.pipelines.keys()))
 
-        # builder.event.register_listener('time_step__cleanup', self.on_timestep_cleanup)
+        builder.event.register_listener('time_step__cleanup', self.on_timestep_cleanup)
 
     def on_initialize_simulants(self, pop_data: 'SimulantData'):
         self.set_stratification_groups(pop_data.index)
 
-    # def on_timestep_cleanup(self, event: 'Event'):
-    #     if self.has_screening_state:
-    #         # Update screening result state
-    #         self.population_values.loc[event.index, project_globals.SCREENING_RESULT_MODEL_NAME] = (
-    #             self.population_view.get(event.index).loc[event.index, project_globals.SCREENING_RESULT_MODEL_NAME]
-    #         )
+    def on_timestep_cleanup(self, event: 'Event'):
+        if self.has_screening_state:
+            # Update screening result state
+            self.population_values.loc[event.index, models.SCREENING_RESULT_MODEL_NAME] = (
+                self.population_view.get(event.index).loc[event.index, models.SCREENING_RESULT_MODEL_NAME]
+            )
 
     def get_all_stratifications(self) -> List[Tuple[Dict[str, str], ...]]:
         """
@@ -138,17 +138,15 @@ class ResultsStratifier:
         stratifications = self.get_all_stratifications()
         for stratification in stratifications:
             if by_screening:
-                pass
-                # TODO: add back if/when screening is added
-                # screening_result = self.population_view.get(pop.index)[project_globals.SCREENING_RESULT_MODEL_NAME]
-                # for screening_state_name in project_globals.SCREENING_MODEL_STATES:
-                #     stratification_key = self.get_stratification_key(stratification)
-                #     if pop.empty:
-                #         pop_in_group = pop
-                #     else:
-                #         pop_in_group = pop.loc[(stratification_group == stratification_key)
-                #                                & (screening_result == screening_state_name)]
-                #     yield (f'{stratification_key}_screening_result_{screening_state_name}',), pop_in_group
+                screening_result = self.population_view.get(pop.index)[models.SCREENING_RESULT_MODEL_NAME]
+                for screening_state_name in models.SCREENING_MODEL_STATES:
+                    stratification_key = self.get_stratification_key(stratification)
+                    if pop.empty:
+                        pop_in_group = pop
+                    else:
+                        pop_in_group = pop.loc[(stratification_group == stratification_key)
+                                               & (screening_result == screening_state_name)]
+                    yield (f'{stratification_key}_screening_result_{screening_state_name}',), pop_in_group
             else:
                 stratification_key = self.get_stratification_key(stratification)
                 if pop.empty:
@@ -185,8 +183,8 @@ class MortalityObserver(MortalityObserver_):
 
     def __init__(self):
         super().__init__()
-        # self.stratifier = ResultsStratifier(self.name, True)
-        self.stratifier = ResultsStratifier(self.name)
+        self.stratifier = ResultsStratifier(self.name, True)
+        #self.stratifier = ResultsStratifier(self.name)
 
     @property
     def sub_components(self) -> List[ResultsStratifier]:
@@ -209,9 +207,14 @@ class MortalityObserver(MortalityObserver_):
                 measure_data = self.stratifier.update_labels(measure_data, labels)
                 metrics.update(measure_data)
 
-        # TODO: if we stratify on screening result, may need to change back
-        # for labels, pop_in_group in self.stratifier.group(pop, False):
-        for labels, pop_in_group in self.stratifier.group(pop):
+        for labels, pop_in_group in self.stratifier.group(pop, False):
+            base_args = (pop_in_group, self.config.to_dict(), self.start_time, self.clock(), self.age_bins)
+            for measure_getter, extra_args in measure_getters:
+                measure_data = measure_getter(*base_args, *extra_args)
+                measure_data = self.stratifier.update_labels(measure_data, labels)
+                metrics.update(measure_data)
+
+        for labels, pop_in_group in self.stratifier.group(pop, False):
             base_args = (pop_in_group, self.config.to_dict(), self.start_time, self.clock(), self.age_bins)
             measure_data = self.stratifier.update_labels(get_person_time(*base_args), labels)
             metrics.update(measure_data)
@@ -229,7 +232,7 @@ class DisabilityObserver(DisabilityObserver_):
 
     def __init__(self):
         super().__init__()
-        self.stratifier = ResultsStratifier(self.name)
+        self.stratifier = ResultsStratifier(self.name, True)
 
     @property
     def sub_components(self) -> List[ResultsStratifier]:
@@ -268,8 +271,7 @@ class StateMachineObserver:
             'metrics': {state_machine: StateMachineObserver.configuration_defaults['metrics']['state_machine']}
         }
         self.is_disease = is_disease == 'True'
-        # self.stratifier = ResultsStratifier(self.name, self.is_disease)
-        self.stratifier = ResultsStratifier(self.name)
+        self.stratifier = ResultsStratifier(self.name, self.is_disease)
 
     @property
     def name(self) -> str:
@@ -304,8 +306,8 @@ class StateMachineObserver:
             columns_required += ['age']
         if self.config['by_sex']:
             columns_required += ['sex']
-        if not self.is_disease:
-            columns_required += ['treatment_propensity']
+        # if not self.is_disease:
+        #     columns_required += ['treatment_propensity']
 
         self.population_view = builder.population.get_view(columns_required)
 
