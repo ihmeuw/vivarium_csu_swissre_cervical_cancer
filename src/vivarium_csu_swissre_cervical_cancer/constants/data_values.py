@@ -1,3 +1,4 @@
+from math import inf
 from typing import NamedTuple
 
 from vivarium_csu_swissre_cervical_cancer.utilities import TruncnormDist
@@ -27,11 +28,11 @@ DAYS_UNTIL_NEXT_QUINQUENNIAL = (1975.0, 72.0)
 PROBABILITY_ATTENDING_SCREENING_KEY = 'probability_attending_screening'
 PROBABILITY_ATTENDING_FIRST_SCREENING_MEAN = 0.25
 PROBABILITY_ATTENDING_FIRST_SCREENING_STDDEV = 0.0025
-# 1.89 with 95%CI 1.06-2.49 (Yan et al. 2017)
-# stddev = (2.49-1.06)/4 = .35750000000000000000
+# truncated normal distirbution with mean=1.89, SD=0.36, lower=1.0 (Yan et al. 2017)
 ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_KEY = 'attended_previous_screening_multiplier'
 ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_MEAN = 1.89
-ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_STDDEV = 0.3575
+ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_STDDEV = 0.36
+
 # PROBABILITY_ATTENDING_GIVEN_PREVIOUS_NO_ATTENDANCE derivation
 # p = prob attends screening
 # p1 = prob attends screening given attended previous
@@ -78,8 +79,8 @@ class __Screening(NamedTuple):
     ATTENDED_PREVIOUS_SCREENING_MULTIPLIER: TruncnormDist = TruncnormDist('attended_prev_screening_multiplier',
                                                                           ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_MEAN,
                                                                           ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_STDDEV,
-                                                                          1,
-                                                                          ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_MEAN*3,
+                                                                          1.0,
+                                                                          inf,
                                                                           key=ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_KEY
                                                                           )
 

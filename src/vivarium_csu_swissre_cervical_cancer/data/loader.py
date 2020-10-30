@@ -217,14 +217,10 @@ def load_incidence_rate(key: str, location: str) -> pd.DataFrame:
         if key == data_keys.CERVICAL_CANCER.BCC_HPV_POS_INCIDENCE_RATE:
             # incidence rate = (((prev_BCC/DURATION_BCC)×(1−PAF)×RR_hrHPV)/prev_hrHPV)
             incidence_rate = (bcc_prevalence / BCC_DURATION) * (1 - paf) * hrhpv_rr
-            incidence_rate = incidence_rate / hrhpv_prevalence
+            # incidence_rate = incidence_rate / hrhpv_prevalence
         elif key == data_keys.CERVICAL_CANCER.BCC_HPV_NEG_INCIDENCE_RATE:
-            # incidence rate = ((prev_BCC/DURATION_BCC)×(1−PAF)) / prev_susceptible
-            # prev_susceptible = 1 - (prev_hrHPV + prev_BCC + prev_c432)
-            prev_c432 = _transform_raw_data(location, paths.RAW_PREVALENCE_DATA_PATH, False)
-            prev_c432 = _expand_age_bins(prev_c432)
+            # incidence rate = ((prev_BCC/DURATION_BCC)×(1−PAF))
             incidence_rate = (bcc_prevalence / BCC_DURATION) * (1 - paf)
-            incidence_rate = incidence_rate / (1 - (hrhpv_prevalence + bcc_prevalence + prev_c432))
         else:
             raise ValueError(f'Unrecognized key {key}')
 
