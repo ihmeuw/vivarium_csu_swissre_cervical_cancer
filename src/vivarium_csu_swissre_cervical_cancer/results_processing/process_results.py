@@ -59,7 +59,7 @@ class MeasureData(NamedTuple):
             df.to_csv(output_dir / f'{key}.csv')
 
 
-def read_data(path: Path) -> (pd.DataFrame, List[str]):
+def read_data(path: Path, single_run: bool) -> (pd.DataFrame, List[str]):
     data = pd.read_hdf(path)
     # noinspection PyUnresolvedReferences
     data = (data
@@ -67,10 +67,18 @@ def read_data(path: Path) -> (pd.DataFrame, List[str]):
             .reset_index(drop=True)
             .rename(columns={results.OUTPUT_SCENARIO_COLUMN: SCENARIO_COLUMN})
             )
-    data[results.INPUT_DRAW_COLUMN] = data[results.INPUT_DRAW_COLUMN].astype(int)
-    data[results.RANDOM_SEED_COLUMN] = data[results.RANDOM_SEED_COLUMN].astype(int)
-    with (path.parent / 'keyspace.yaml').open() as f:
-        keyspace = yaml.full_load(f)
+    if single_run:
+        data[results.INPUT_DRAW_COLUMN] = 0
+        data[results.RANDOM_SEED_COLUMN] = 0
+        data['scenario'] = 'baseline'
+        keyspace = {results.INPUT_DRAW_COLUMN: [0],
+                    results.RANDOM_SEED_COLUMN: [0],
+                    'screening_algorithm.scenario': ['baseline']}
+    else:
+        data[results.INPUT_DRAW_COLUMN] = data[results.INPUT_DRAW_COLUMN].astype(int)
+        data[results.RANDOM_SEED_COLUMN] = data[results.RANDOM_SEED_COLUMN].astype(int)
+        with (path.parent / 'keyspace.yaml').open() as f:
+            keyspace = yaml.full_load(f)
     return data, keyspace
 
 

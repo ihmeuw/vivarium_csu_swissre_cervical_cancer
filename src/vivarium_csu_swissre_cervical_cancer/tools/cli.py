@@ -97,7 +97,11 @@ def make_artifacts(location: str, output_dir: str, append: bool, verbose: int, w
 @click.option('--pdb', 'with_debugger',
               is_flag=True,
               help='Drop into python debugger if an error occurs.')
-def make_results(output_file: str, verbose: int, with_debugger: bool) -> None:
+@click.option('-s', '--single', 'single_run',
+              default=False,
+              is_flag=True,
+              help='Results are from a single, non-parallel run.')
+def make_results(output_file: str, verbose: int, with_debugger: bool, single_run: bool) -> None:
     configure_logging_to_terminal(verbose)
     main = handle_exceptions(build_results, logger, with_debugger=with_debugger)
-    main(output_file)
+    main(output_file, single_run)
