@@ -57,3 +57,7 @@ configuration:
             by_age: False
             by_sex: False
             by_year: True
+        screening_result:
+            by_age: False
+            by_sex: False
+            by_year: True
