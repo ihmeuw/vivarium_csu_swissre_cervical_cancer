@@ -299,7 +299,9 @@ class ScreeningAlgorithm:
     def _schedule_screening(self, previous_screening: pd.Series,
                             screening_result: pd.Series, age: pd.Series) -> pd.Series:
         """Schedules follow up visits."""
-        annual_screening = (screening_result != models.NEGATIVE_STATE_NAME)
+        annual_screening = ((screening_result != models.NEGATIVE_STATE_NAME)
+                            & (age <= data_values.LAST_SCREENING_AGE)
+                            & (age >= data_values.FIRST_SCREENING_AGE))
         triennial_screening = (age < data_values.MID_SCREENING_AGE) & (screening_result == models.NEGATIVE_STATE_NAME)
         quinquennial_screening = (
                 (age >= data_values.MID_SCREENING_AGE)
