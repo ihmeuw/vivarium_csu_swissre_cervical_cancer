@@ -121,8 +121,10 @@ class ScreeningAlgorithm:
         """Determine if someone will go for a screening"""
         # Get all simulants with a screening scheduled during this timestep
         pop = self.population_view.get(event.index, query='alive == "alive"')
-        screening_scheduled = pop.loc[:, data_values.NEXT_SCREENING_DATE] < self.clock()
         age = pop.loc[:, AGE]
+        screening_scheduled = ((pop.loc[:, data_values.NEXT_SCREENING_DATE] < self.clock())
+                               & (age >= data_values.FIRST_SCREENING_AGE)
+                               & (age <= data_values.LAST_SCREENING_AGE))
 
         # Get probability of attending the next screening for scheduled simulants
         p_attends_screening = self._get_screening_attendance_probability(pop)
