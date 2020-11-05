@@ -21,9 +21,9 @@ DAYS_UNTIL_NEXT_TRIENNIAL = (1185.0, 72.0)
 DAYS_UNTIL_NEXT_QUINQUENNIAL = (1975.0, 72.0)
 
 
-###########################################
-# Screening and Treatment Model Constants #
-###########################################
+#############################
+# Screening Model Constants #
+#############################
 
 PROBABILITY_ATTENDING_SCREENING_KEY = 'probability_attending_screening'
 PROBABILITY_ATTENDING_FIRST_SCREENING_MEAN = 0.25
@@ -103,3 +103,10 @@ class __Screening(NamedTuple):
 
 
 SCREENING = __Screening()
+
+
+###############################
+# Vaccination Model Constants #
+###############################
+
+INITIAL_HPV_VACCINE_PREV = 0.10
