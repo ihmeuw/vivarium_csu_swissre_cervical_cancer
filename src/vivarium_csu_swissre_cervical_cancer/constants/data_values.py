@@ -109,4 +109,4 @@ SCREENING = __Screening()
 # Vaccination Model Constants #
 ###############################
 
-INITIAL_HPV_VACCINE_PREV = 0.10
+VACCINATION_DATE_COLUMN_NAME = "vaccination_date"

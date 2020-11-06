@@ -16,6 +16,7 @@ components:
         - StateMachineObserver('screening_result', 'False')
 
         - ScreeningObserver()
+        - VaccinationObserver()
 
 configuration:
     input_data:
@@ -69,6 +70,14 @@ configuration:
             by_sex: False
             by_year: True
         screening_result:
+            by_age: False
+            by_sex: False
+            by_year: True
+        screening:
+            by_age: False
+            by_sex: False
+            by_year: True
+        vaccination:
             by_age: False
             by_sex: False
             by_year: True
