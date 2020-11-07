@@ -160,7 +160,7 @@ class ResultsStratifier:
                     yield (f'{stratification_key}_screening_result_{screening_state_name}',), pop_in_group
             elif by_screening and by_vaccination:
                 screening_result = self.population_view.get(pop.index)[models.SCREENING_RESULT_MODEL_NAME]
-                vaccination_state = self.population_view.get(pop.index)[data_values.VACCINATION_DATE_COLUMN_NAME] != pd.NaT
+                vaccination_state = ~(self.population_view.get(pop.index)[data_values.VACCINATION_DATE_COLUMN_NAME].isna())
                 for screening_state_name in models.SCREENING_MODEL_STATES:
                     for vax_state in [True, False]:
                         stratification_key = self.get_stratification_key(stratification)
@@ -174,7 +174,7 @@ class ResultsStratifier:
                                                    & (vaccination_state == vax_state)]
                         yield (f'{stratification_key}_screening_result_{screening_state_name}_{vax_label}',), pop_in_group
             elif not by_screening and by_vaccination:
-                vaccination_state = self.population_view.get(pop.index)[data_values.VACCINATION_DATE_COLUMN_NAME] != pd.NaT
+                vaccination_state = ~(self.population_view.get(pop.index)[data_values.VACCINATION_DATE_COLUMN_NAME].isna())
                 for vax_state in [True, False]:
                     stratification_key = self.get_stratification_key(stratification)
                     vax_label = "vaccinated" if vax_state else "not_vaccinated"
@@ -243,14 +243,7 @@ class MortalityObserver(MortalityObserver_):
                 measure_data = self.stratifier.update_labels(measure_data, labels)
                 metrics.update(measure_data)
 
-        for labels, pop_in_group in self.stratifier.group(pop, False):
-            base_args = (pop_in_group, self.config.to_dict(), self.start_time, self.clock(), self.age_bins)
-            for measure_getter, extra_args in measure_getters:
-                measure_data = measure_getter(*base_args, *extra_args)
-                measure_data = self.stratifier.update_labels(measure_data, labels)
-                metrics.update(measure_data)
-
-        for labels, pop_in_group in self.stratifier.group(pop, False):
+        for labels, pop_in_group in self.stratifier.group(pop, False, False):
             base_args = (pop_in_group, self.config.to_dict(), self.start_time, self.clock(), self.age_bins)
             measure_data = self.stratifier.update_labels(get_person_time(*base_args), labels)
             metrics.update(measure_data)
