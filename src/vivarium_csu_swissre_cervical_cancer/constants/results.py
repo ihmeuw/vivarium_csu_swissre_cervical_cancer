@@ -62,7 +62,7 @@ NON_COUNT_TEMPLATES = [
 ]
 
 POP_STATES = ('living', 'dead', 'tracked', 'untracked')
-YEARS = tuple(range(2020, 2041))
+YEARS = tuple(range(2020, 2030))
 AGE_COHORTS = tuple(f'{2020 - (x + 5)}_to_{2020 - x}' for x in range(15, 85, 5))
 EVENTS = (SCREENING_SCHEDULED, SCREENING_ATTENDED, VACCINATED_FOR_HPV)
 CAUSES_OF_DEATH = ('other_causes', models.INVASIVE_CANCER_STATE_NAME, models.INVASIVE_CANCER_WITH_HPV_STATE_NAME)

@@ -495,8 +495,8 @@ class VaccinationObserver:
         self.step_size = builder.time.step_size()
         self.age_bins = get_age_bins(builder)
         self.counts = Counter()
-        self.propensity = builder.value.get_value('hpv_vaccination.propensity')
-        self.exposure = builder.value.get_value('hpv_vaccination.exposure')
+        self.propensity = builder.value.get_value('no_hpv_vaccination.propensity')
+        self.exposure = builder.value.get_value('no_hpv_vaccination.exposure')
 
         columns_required = [
             'alive',
@@ -550,7 +550,7 @@ class VaccinationObserver:
         return 'VaccinationObserver'
 
     def get_vax_this_step(self, vax_date: pd.Series) -> pd.Series:
-        return (self.exposure(vax_date.index) == "cat1") & vax_date.isna()
+        return (self.exposure(vax_date.index) == "cat2") & vax_date.isna()
 
 
 def get_state_person_time(pop: pd.DataFrame, config: Dict[str, bool],

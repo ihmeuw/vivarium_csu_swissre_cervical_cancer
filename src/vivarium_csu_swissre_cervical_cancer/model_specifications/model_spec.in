@@ -4,8 +4,8 @@ components:
             - BasePopulation()
             - Mortality()
         risks:
-            - Risk('risk_factor.hpv_vaccination')
-            - RiskEffect('risk_factor.hpv_vaccination', 'sequela.high_risk_hpv.incidence_rate')
+            - Risk('risk_factor.no_hpv_vaccination')
+            - RiskEffect('risk_factor.no_hpv_vaccination', 'sequela.high_risk_hpv.incidence_rate')
 
     vivarium_csu_swissre_cervical_cancer.components:
         - CervicalCancer()
@@ -48,13 +48,13 @@ configuration:
         age_end: 95
         # need to include 95+ age_bin
 
-    hpv_vaccination:
-        exposure: 0.1
+    no_hpv_vaccination:
+        exposure: 0.9
 
-    effect_of_hpv_vaccination_on_high_risk_hpv:
+    effect_of_no_hpv_vaccination_on_high_risk_hpv:
         incidence_rate:
-            mean: 0.22
-            se: 0.04
+            mean: 4.5454
+            se: 0.81
 
     metrics:
         disability:
