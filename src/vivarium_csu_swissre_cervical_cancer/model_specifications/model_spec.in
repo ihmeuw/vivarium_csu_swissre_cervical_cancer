@@ -53,8 +53,8 @@ configuration:
 
     effect_of_no_hpv_vaccination_on_high_risk_hpv:
         incidence_rate:
-            mean: 4.5454
-            se: 0.81
+            mean: 4.71
+            se: 0.94
 
     metrics:
         disability:
