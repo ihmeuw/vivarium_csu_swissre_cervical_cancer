@@ -1,4 +1,4 @@
-from math import inf
+from math import inf, log
 from typing import NamedTuple
 
 from vivarium_csu_swissre_cervical_cancer.utilities import TruncnormDist
@@ -8,13 +8,12 @@ REMISSION_RATE = 0.1
 # BCC duration: "temporarily use 14.5 years"
 BCC_DURATION = 14.5
 
-# use numpy normal get random variable
-# from: https://vivarium-research.readthedocs.io/en/latest/gbd2017_models/causes/neoplasms/cervical_cancer/
-#   cervical_cancer_cause_model.html?highlight=cervical%20cancer
-# relative risk of developing BCC for hrHPV infected women versus without HPV infection = 16.2 (95%CI 9.6 to 27.3)
-# mean, stddev, key
-# Lets start with log-normal, since the CI is so asymmetric - Abie
-RR_HRHPV_PARAMS = (16.2, 4.425, "rr_hrhpv_dist")
+# relative risk of HPV 16/18 causing CIN2+ = 27.4 (95%CI 19.7 to 38.0)
+# from https://vivarium-research.readthedocs.io/en/latest/concept_models/vivarium_swissre_cervical
+# cancer/concept_model.html#hpv-model:
+# relative risk of HPV 16 and/or 18 causing CIN2+ (RR_hrHPV):
+# use log-normal distribution exp(normal(mean=log(27.4), SD=0.17))
+RR_HRHPV_PARAMS = (log(27.4), 0.17, "rr_hrhpv_dist")
 
 DAYS_UNTIL_NEXT_ANNUAL = TruncnormDist('days_until_next_annual', 395.0, 72.0, 180.0, 1800.0)
 DAYS_UNTIL_NEXT_TRIENNIAL = (1185.0, 72.0)
