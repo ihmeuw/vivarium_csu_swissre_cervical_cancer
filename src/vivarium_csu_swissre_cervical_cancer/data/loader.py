@@ -161,14 +161,14 @@ def load_prevalence(key: str, location: str) -> pd.DataFrame:
         if key == data_keys.CERVICAL_CANCER.BCC_PREVALENCE:
             return _expand_age_bins(prev_bcc_without_hrhpv)
         else:  # BCC with HRHPV
-            prev_bcc_with_hrhpv = base_prevalence - prev_bcc_without_hrhpv
+            prev_bcc_with_hrhpv = (base_prevalence * hrhpv_rr) / (hrhpv_rr + 1)
             return _expand_age_bins(prev_bcc_with_hrhpv)
     elif key in [data_keys.CERVICAL_CANCER.PREVALENCE, data_keys.CERVICAL_CANCER.PREVALENCE_WITH_HRHPV]:
         prev_icc_without_hrhpv = base_prevalence / (hrhpv_rr + 1)
         if key == data_keys.CERVICAL_CANCER.PREVALENCE:
             return _expand_age_bins(prev_icc_without_hrhpv)
         else:  # ICC with HRHPV
-            prev_icc_with_hrhpv = base_prevalence - prev_icc_without_hrhpv
+            prev_icc_with_hrhpv = (base_prevalence * hrhpv_rr) / (hrhpv_rr + 1)
             return _expand_age_bins(prev_icc_with_hrhpv)
     elif key == data_keys.CERVICAL_CANCER.HRHPV_PREVALENCE:
         return hrhpv_prev
