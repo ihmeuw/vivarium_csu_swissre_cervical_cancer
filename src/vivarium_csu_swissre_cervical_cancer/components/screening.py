@@ -50,6 +50,11 @@ class ScreeningAlgorithm:
         self.screening_parameters = {parameter.name: parameter.get_random_variable(draw)
                                      for parameter in data_values.SCREENING}
 
+        self.probability_attending_screening = builder.value.register_value_producer(
+            data_values.PROBABILITY_ATTENDING_SCREENING_KEY,
+            self.get_screening_attendance_probability,
+            [data_values.ATTENDED_LAST_SCREENING])
+
         required_columns = [AGE, models.CERVICAL_CANCER_MODEL_NAME]
         columns_created = [
             models.SCREENING_RESULT_MODEL_NAME,
@@ -127,7 +132,7 @@ class ScreeningAlgorithm:
                                & (age <= data_values.LAST_SCREENING_AGE))
 
         # Get probability of attending the next screening for scheduled simulants
-        p_attends_screening = self._get_screening_attendance_probability(pop)
+        p_attends_screening = self.get_screening_attendance_probability(pop)
 
         # Get all simulants who actually attended their screening
         attends_screening: pd.Series = (
@@ -160,7 +165,7 @@ class ScreeningAlgorithm:
             pd.concat([screening_result, previous_screening, next_screening, attended_last_screening], axis=1)
         )
 
-    def _get_screening_attendance_probability(self, pop: pd.DataFrame) -> pd.Series:
+    def get_screening_attendance_probability(self, pop: pd.DataFrame) -> pd.Series:
         base_first_screening_attendance = self.screening_parameters[
             data_values.SCREENING.BASE_ATTENDANCE.name
         ]
@@ -180,32 +185,10 @@ class ScreeningAlgorithm:
                 1 + base_first_screening_attendance * (attended_previous_screening_multiplier - 1))
         screening_attended_previous = attended_previous_screening_multiplier * screening_not_attended_previous
 
-        if self.scenario == scenarios.SCENARIOS.baseline:
-            conditional_probabilities = {
-                True: screening_attended_previous,
-                False: screening_not_attended_previous,
-            }
-        # else:
-        #     if self.clock() < project_globals.RAMP_UP_START:
-        #         conditional_probabilities = {
-        #             True: screening_start_attended_previous,
-        #             False: screening_start_not_attended_previous,
-        #         }
-        #     elif self.clock() < project_globals.RAMP_UP_END:
-        #         elapsed_time = self.clock() - project_globals.RAMP_UP_START
-        #         progress_to_ramp_up_end = elapsed_time / (project_globals.RAMP_UP_END - project_globals.RAMP_UP_START)
-        #         attended_prev_ramp_up = screening_end_attended_previous - screening_start_attended_previous
-        #         not_attended_prev_ramp_up = screening_end_not_attended_previous - screening_start_not_attended_previous
-        #
-        #         conditional_probabilities = {
-        #             True: attended_prev_ramp_up * progress_to_ramp_up_end + screening_start_attended_previous,
-        #             False: not_attended_prev_ramp_up * progress_to_ramp_up_end + screening_start_not_attended_previous,
-        #         }
-        #     else:
-        #         conditional_probabilities = {
-        #             True: screening_end_attended_previous,
-        #             False: screening_end_not_attended_previous,
-        #         }
+        conditional_probabilities = {
+            True: screening_attended_previous,
+            False: screening_not_attended_previous,
+        }
 
         return pop.loc[:, data_values.ATTENDED_LAST_SCREENING].apply(lambda x: conditional_probabilities[x])
 
