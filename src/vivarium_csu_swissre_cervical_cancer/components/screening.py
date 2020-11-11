@@ -50,6 +50,9 @@ class ScreeningAlgorithm:
         self.screening_parameters = {parameter.name: parameter.get_random_variable(draw)
                                      for parameter in data_values.SCREENING}
 
+        self.base_screening_attendance = builder.lookup.build_table(
+            self.screening_parameters[data_values.SCREENING.BASE_ATTENDANCE])
+
         self.probability_attending_screening = builder.value.register_value_producer(
             data_values.PROBABILITY_ATTENDING_SCREENING_KEY,
             self.get_screening_attendance_probability,
@@ -132,7 +135,7 @@ class ScreeningAlgorithm:
                                & (age <= data_values.LAST_SCREENING_AGE))
 
         # Get probability of attending the next screening for scheduled simulants
-        p_attends_screening = self.get_screening_attendance_probability(pop)
+        p_attends_screening = self.probability_attending_screening(pop.index)
 
         # Get all simulants who actually attended their screening
         attends_screening: pd.Series = (
@@ -165,10 +168,10 @@ class ScreeningAlgorithm:
             pd.concat([screening_result, previous_screening, next_screening, attended_last_screening], axis=1)
         )
 
-    def get_screening_attendance_probability(self, pop: pd.DataFrame) -> pd.Series:
-        base_first_screening_attendance = self.screening_parameters[
-            data_values.SCREENING.BASE_ATTENDANCE.name
-        ]
+    def get_screening_attendance_probability(self, idx) -> pd.Series:
+        pop = self.population_view.get(idx)
+
+        base_first_screening_attendance = self.base_screening_attendance(idx)
         attended_previous_screening_multiplier = self.screening_parameters[
             data_values.SCREENING.ATTENDED_PREVIOUS_SCREENING_MULTIPLIER.name
         ]
