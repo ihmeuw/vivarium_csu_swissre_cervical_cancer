@@ -51,12 +51,12 @@ class ScreeningAlgorithm:
                                      for parameter in data_values.SCREENING}
 
         self.base_screening_attendance = builder.lookup.build_table(
-            self.screening_parameters[data_values.SCREENING.BASE_ATTENDANCE])
+            self.screening_parameters[data_values.SCREENING.BASE_ATTENDANCE.name])
 
         self.probability_attending_screening = builder.value.register_value_producer(
             data_values.PROBABILITY_ATTENDING_SCREENING_KEY,
-            self.get_screening_attendance_probability,
-            [data_values.ATTENDED_LAST_SCREENING])
+            source=self.get_screening_attendance_probability,
+            requires_columns=[data_values.ATTENDED_LAST_SCREENING])
 
         required_columns = [AGE, models.CERVICAL_CANCER_MODEL_NAME]
         columns_created = [
@@ -188,12 +188,17 @@ class ScreeningAlgorithm:
                 1 + base_first_screening_attendance * (attended_previous_screening_multiplier - 1))
         screening_attended_previous = attended_previous_screening_multiplier * screening_not_attended_previous
 
-        conditional_probabilities = {
-            True: screening_attended_previous,
-            False: screening_not_attended_previous,
-        }
+        prob_attending_screening = screening_not_attended_previous.copy()
+        prob_attending_screening[pop.loc[:, data_values.ATTENDED_LAST_SCREENING]] = screening_attended_previous.loc[
+            pop.loc[:, data_values.ATTENDED_LAST_SCREENING]]
 
-        return pop.loc[:, data_values.ATTENDED_LAST_SCREENING].apply(lambda x: conditional_probabilities[x])
+        # conditional_probabilities = {
+        #     True: screening_attended_previous,
+        #     False: screening_not_attended_previous,
+        # }
+        #
+        # return pop.loc[:, data_values.ATTENDED_LAST_SCREENING].apply(lambda x: conditional_probabilities[x])
+        return prob_attending_screening
 
     def _do_screening(self, pop: pd.Series) -> pd.Series:
         """Perform screening for all simulants who attended their screening"""
