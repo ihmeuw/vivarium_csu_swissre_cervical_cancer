@@ -27,8 +27,8 @@ class Intervention:
                                               modifier=self.intervention_effect)
 
     # define a function to do the modification
-    def intervention_effect(self, idx: pd.Index, target: pd.Series):
-        effect = 0
+    def intervention_effect(self, idx: pd.Index, target: pd.Series) -> pd.Series:
+        effect = 0.0
 
         if self.scenario == scenarios.SCENARIOS.alternative:
             if data_values.SCALE_UP_START_DT <= self.clock() < data_values.SCALE_UP_END_DT:

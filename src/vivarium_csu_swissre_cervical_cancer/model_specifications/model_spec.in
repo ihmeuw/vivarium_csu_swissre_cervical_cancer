@@ -16,9 +16,9 @@ components:
         - DisabilityObserver()
         - StateMachineObserver('cervical_cancer')
         - StateMachineObserver('screening_result', 'False')
-
         - ScreeningObserver()
         - VaccinationObserver()
+        - Intervention()
 
 configuration:
     input_data:
