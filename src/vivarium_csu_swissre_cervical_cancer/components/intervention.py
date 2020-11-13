@@ -21,6 +21,10 @@ class Intervention:
         self.scenario = builder.configuration.screening_algorithm.scenario
         self.clock = builder.time.clock()
         self.step_size = builder.time.step_size()
+        draw = builder.configuration.input_data.input_draw_number
+
+        self.p_screening_attendance_start = data_values.SCREENING.BASE_ATTENDANCE_START.get_random_variable(draw)
+        self.p_screening_attendance_end = data_values.SCREENING.BASE_ATTENDANCE_END.get_random_variable(draw)
 
         # Register pipeline modifier
         builder.value.register_value_modifier(data_values.PROBABILITY_ATTENDING_SCREENING_KEY,

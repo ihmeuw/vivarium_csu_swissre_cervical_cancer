@@ -176,17 +176,8 @@ class ScreeningAlgorithm:
             data_values.SCREENING.ATTENDED_PREVIOUS_SCREENING_MULTIPLIER.name
         ]
 
-        # Derivation where p1 == prob attends screening given attended previous,
-        # p2 == prob attends screening given didn't attend previous, p == prob attends screening,
-        # and m == multiplier drawn from ~1.89
-        # p1 = m * p2
-        # p = p1 * p + p2 * (1 - p)
-        # p = m * p2 * p + p2 * (1 - p)
-        # p = p2 * (m * p + 1 - p) = p2 * (1 + (m - 1) * p)
-        # p2 = p / (1 + p * (m - 1))
-        screening_not_attended_previous = base_first_screening_attendance / (
-                1 + base_first_screening_attendance * (attended_previous_screening_multiplier - 1))
-        screening_attended_previous = attended_previous_screening_multiplier * screening_not_attended_previous
+        screening_attended_previous, screening_not_attended_previous = self.get_differential_screening_probabilities(
+            attended_previous_screening_multiplier, base_first_screening_attendance)
 
         prob_attending_screening = screening_not_attended_previous.copy()
         prob_attending_screening[pop.loc[:, data_values.ATTENDED_LAST_SCREENING]] = screening_attended_previous.loc[
@@ -199,6 +190,7 @@ class ScreeningAlgorithm:
         #
         # return pop.loc[:, data_values.ATTENDED_LAST_SCREENING].apply(lambda x: conditional_probabilities[x])
         return prob_attending_screening
+
 
     def _do_screening(self, pop: pd.Series) -> pd.Series:
         """Perform screening for all simulants who attended their screening"""
@@ -317,3 +309,18 @@ class ScreeningAlgorithm:
         ).loc[quinquennial_screening]
 
         return previous_screening + time_to_next_screening.astype('timedelta64[ns]')
+
+
+def get_differential_screening_probabilities(attended_previous_screening_multiplier, base_screening_attendance):
+    # Derivation where p1 == prob attends screening given attended previous,
+    # p2 == prob attends screening given didn't attend previous, p == prob attends screening,
+    # and m == multiplier drawn from ~1.89
+    # p1 = m * p2
+    # p = p1 * p + p2 * (1 - p)
+    # p = m * p2 * p + p2 * (1 - p)
+    # p = p2 * (m * p + 1 - p) = p2 * (1 + (m - 1) * p)
+    # p2 = p / (1 + p * (m - 1))
+    screening_not_attended_previous = base_screening_attendance / (
+            1 + base_screening_attendance * (attended_previous_screening_multiplier - 1))
+    screening_attended_previous = attended_previous_screening_multiplier * screening_not_attended_previous
+    return screening_attended_previous, screening_not_attended_previous
