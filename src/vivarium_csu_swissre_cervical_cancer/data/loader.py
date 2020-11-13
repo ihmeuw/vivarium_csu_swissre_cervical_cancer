@@ -262,7 +262,7 @@ def load_disability_weight(key: str, location: str):
 def load_emr(key: str, location: str):
     return (
             load_csmr(data_keys.CERVICAL_CANCER.CSMR, location)
-            / _transform_raw_data(location, paths.RAW_PREVALENCE_DATA_PATH, False)
+            / _expand_age_bins(_transform_raw_data(location, paths.RAW_PREVALENCE_DATA_PATH, False))
     )
 
 
