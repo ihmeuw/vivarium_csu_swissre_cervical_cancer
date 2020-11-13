@@ -66,6 +66,9 @@ configuration:
             mean: 4.71
             se: 0.94
 
+    screening_algorithm:
+        scenario: 'baseline'
+
     metrics:
         disability:
             by_age: False

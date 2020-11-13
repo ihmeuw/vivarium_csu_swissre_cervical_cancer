@@ -3,4 +3,4 @@ random_seed_count: 40
 
 branches:
   - screening_algorithm:
-      scenario: ['baseline']
+      scenario: ['baseline', 'alternative']

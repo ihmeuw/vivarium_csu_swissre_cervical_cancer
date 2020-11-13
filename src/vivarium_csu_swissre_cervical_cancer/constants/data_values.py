@@ -1,5 +1,7 @@
 from math import inf, log
 from typing import NamedTuple
+from datetime import datetime
+
 
 from vivarium_csu_swissre_cervical_cancer.utilities import TruncnormDist
 
@@ -109,3 +111,12 @@ SCREENING = __Screening()
 ###############################
 
 VACCINATION_DATE_COLUMN_NAME = "vaccination_date"
+
+
+###################################
+# Scale-up Intervention Constants #
+###################################
+SCALE_UP_START_DT = datetime(2021, 1, 1)
+SCALE_UP_END_DT = datetime(2030, 1, 1)
+SCREENING_SCALE_UP_GOAL_COVERAGE = 0.50
+SCREENING_SCALE_UP_DIFFERENCE = SCREENING_SCALE_UP_GOAL_COVERAGE - PROBABILITY_ATTENDING_FIRST_SCREENING_MEAN
