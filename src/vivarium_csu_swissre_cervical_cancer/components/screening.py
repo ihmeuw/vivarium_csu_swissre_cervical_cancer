@@ -176,7 +176,7 @@ class ScreeningAlgorithm:
             data_values.SCREENING.ATTENDED_PREVIOUS_SCREENING_MULTIPLIER.name
         ]
 
-        screening_attended_previous, screening_not_attended_previous = self.get_differential_screening_probabilities(
+        screening_attended_previous, screening_not_attended_previous = get_differential_screening_probabilities(
             attended_previous_screening_multiplier, base_first_screening_attendance)
 
         prob_attending_screening = screening_not_attended_previous.copy()
