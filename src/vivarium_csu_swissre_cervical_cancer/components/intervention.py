@@ -46,8 +46,9 @@ class Intervention:
         effect = 0.0
 
         if self.scenario == scenarios.SCENARIOS.alternative:
-            effect = pd.Series(0.0, idx)
-            attended_previous = self.population_view.subview(data_values.ATTENDED_LAST_SCREENING).get(idx)
+            effect: pd.Series = pd.Series(0.0, idx)
+            attended_previous = (self.population_view.subview([data_values.ATTENDED_LAST_SCREENING])
+                .get(idx)[data_values.ATTENDED_LAST_SCREENING])
             if data_values.SCALE_UP_START_DT <= self.clock() < data_values.SCALE_UP_END_DT:
 
                 def get_effect(current_date_time: datetime, scale_up: float) -> float:

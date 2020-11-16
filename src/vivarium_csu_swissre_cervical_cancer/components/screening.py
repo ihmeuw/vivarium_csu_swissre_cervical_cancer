@@ -51,7 +51,7 @@ class ScreeningAlgorithm:
                                      for parameter in data_values.SCREENING}
 
         self.base_screening_attendance = builder.lookup.build_table(
-            self.screening_parameters[data_values.SCREENING.BASE_ATTENDANCE.name])
+            self.screening_parameters[data_values.SCREENING.BASE_ATTENDANCE_START.name])
 
         self.probability_attending_screening = builder.value.register_value_producer(
             data_values.PROBABILITY_ATTENDING_SCREENING_KEY,
@@ -118,7 +118,7 @@ class ScreeningAlgorithm:
         previous_screening.loc[under_screening_age] = pd.NaT
 
         attended_previous = pd.Series(self.randomness.get_draw(pop.index, 'attended_previous')
-                                      < self.screening_parameters[data_values.SCREENING.BASE_ATTENDANCE.name],
+                                      < self.screening_parameters[data_values.SCREENING.BASE_ATTENDANCE_START.name],
                                       name=data_values.ATTENDED_LAST_SCREENING)
 
         self.population_view.update(

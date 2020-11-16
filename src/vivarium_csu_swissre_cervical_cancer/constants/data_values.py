@@ -79,7 +79,7 @@ class __Screening(NamedTuple):
                                                          PROBABILITY_ATTENDING_SCREENING_START_STDDEV,
                                                          key=PROBABILITY_ATTENDING_SCREENING_KEY)
 
-    BASE_ATTENDANCE_END: TruncnormDist = TruncnormDist('start_attendance_base',
+    BASE_ATTENDANCE_END: TruncnormDist = TruncnormDist('end_attendance_base',
                                                        PROBABILITY_ATTENDING_SCREENING_END_MEAN,
                                                        PROBABILITY_ATTENDING_SCREENING_END_STDDEV,
                                                        key=PROBABILITY_ATTENDING_SCREENING_KEY)
