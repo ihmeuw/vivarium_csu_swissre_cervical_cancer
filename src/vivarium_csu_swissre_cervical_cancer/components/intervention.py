@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import typing
-from typing import Tuple
+from typing import Tuple, Union
 
 import pandas as pd
 
@@ -32,12 +32,17 @@ class Intervention:
 
         required_columns = [
             data_values.ATTENDED_LAST_SCREENING,
+            "age"
         ]
 
         # Register pipeline modifier
         builder.value.register_value_modifier(data_values.PROBABILITY_ATTENDING_SCREENING_KEY,
                                               modifier=self.intervention_effect,
                                               requires_columns=[data_values.ATTENDED_LAST_SCREENING])
+
+        builder.value.register_value_modifier('risk_factor.no_hpv_vaccination.exposure_parameters',
+                                              modifier=self.vax_intervention_effect,
+                                              requires_columns=["age"])
 
         self.population_view = builder.population.get_view(required_columns)
 
@@ -50,12 +55,6 @@ class Intervention:
             attended_previous = (self.population_view.subview([data_values.ATTENDED_LAST_SCREENING])
                 .get(idx)[data_values.ATTENDED_LAST_SCREENING])
             if data_values.SCALE_UP_START_DT <= self.clock() < data_values.SCALE_UP_END_DT:
-
-                def get_effect(current_date_time: datetime, scale_up: float) -> float:
-                    return (((current_date_time - data_values.SCALE_UP_START_DT) /
-                             (data_values.SCALE_UP_END_DT - data_values.SCALE_UP_START_DT))
-                            * scale_up)
-
                 effect[attended_previous] = get_effect(self.clock(), self.p_attending_given_attended_scale_up)
                 effect[~attended_previous] = get_effect(self.clock(), self.p_attending_given_not_scale_up)
 
@@ -64,6 +63,25 @@ class Intervention:
                 effect[~attended_previous] = self.p_attending_given_not_scale_up
 
         return target + effect
+
+    def vax_intervention_effect(self, idx: pd.Index, target: pd.Series) -> pd.Series:
+        effect: pd.Series = pd.Series(0.0, idx)
+
+        if self.scenario == scenarios.SCENARIOS.alternative:
+            simulant_ages = self.population_view.subview(['age']).get(idx)['age']
+            last_vax_eligibility_date = (
+                    (data_values.LAST_VACCINATION_AGE - simulant_ages).apply(lambda x: timedelta(days=x*365))
+                    + self.clock())
+            if data_values.SCALE_UP_START_DT <= self.clock() < data_values.SCALE_UP_END_DT:
+                last_vax_date = last_vax_eligibility_date.apply(lambda dt: max(
+                    data_values.SCALE_UP_START_DT, min(dt, self.clock())))
+                effect = get_effect(last_vax_date, 0.3)
+            elif self.clock() >= data_values.SCALE_UP_END_DT:
+                last_vax_date = last_vax_eligibility_date.apply(lambda dt: max(
+                    data_values.SCALE_UP_START_DT, min(dt, data_values.SCALE_UP_END_DT)))
+                effect = get_effect(last_vax_date, 0.3)
+
+        return target - effect
 
 
 def get_screening_attendance_scale_up_factor(draw: int) -> Tuple[float, float]:
@@ -82,3 +100,8 @@ def get_screening_attendance_scale_up_factor(draw: int) -> Tuple[float, float]:
     p_attending_given_attended_scale_up = p_attending_given_attended_end - p_attending_given_attended_start
     p_attending_given_not_scale_up = p_attending_given_not_end - p_attending_given_not_start
     return p_attending_given_attended_scale_up, p_attending_given_not_scale_up
+
+
+def get_effect(current_date_time: Union[datetime, pd.Series], scale_up: float) -> Union[float, pd.Series]:
+    return (((current_date_time - data_values.SCALE_UP_START_DT)
+             / (data_values.SCALE_UP_END_DT - data_values.SCALE_UP_START_DT)) * scale_up)
