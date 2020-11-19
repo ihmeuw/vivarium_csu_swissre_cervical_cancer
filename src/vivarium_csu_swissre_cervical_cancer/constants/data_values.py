@@ -1,5 +1,7 @@
 from math import inf, log
 from typing import NamedTuple
+from datetime import datetime
+
 
 from vivarium_csu_swissre_cervical_cancer.utilities import TruncnormDist
 
@@ -25,9 +27,11 @@ DAYS_UNTIL_NEXT_QUINQUENNIAL = (1975.0, 72.0)
 #############################
 
 PROBABILITY_ATTENDING_SCREENING_KEY = 'probability_attending_screening'
-PROBABILITY_ATTENDING_FIRST_SCREENING_MEAN = 0.25
-PROBABILITY_ATTENDING_FIRST_SCREENING_STDDEV = 0.0025
-# truncated normal distirbution with mean=1.89, SD=0.36, lower=1.0 (Yan et al. 2017)
+PROBABILITY_ATTENDING_SCREENING_START_MEAN = 0.25
+PROBABILITY_ATTENDING_SCREENING_START_STDDEV = 0.0025
+PROBABILITY_ATTENDING_SCREENING_END_MEAN = 0.5
+PROBABILITY_ATTENDING_SCREENING_END_STDDEV = 0.005
+# truncated normal distribution with mean=1.89, SD=0.36, lower=1.0 (Yan et al. 2017)
 ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_KEY = 'attended_previous_screening_multiplier'
 ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_MEAN = 1.89
 ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_STDDEV = 0.36
@@ -70,10 +74,15 @@ class __Screening(NamedTuple):
     REMISSION_SENSITIVITY: TruncnormDist = TruncnormDist('remission_sensitivity', 1.0, 0.0)
     REMISSION_SPECIFICITY: TruncnormDist = TruncnormDist('remission_specificity', 1.0, 0.0)
 
-    BASE_ATTENDANCE: TruncnormDist = TruncnormDist('start_attendance_base',
-                                                   PROBABILITY_ATTENDING_FIRST_SCREENING_MEAN,
-                                                   PROBABILITY_ATTENDING_FIRST_SCREENING_STDDEV,
-                                                   key=PROBABILITY_ATTENDING_SCREENING_KEY)
+    BASE_ATTENDANCE_START: TruncnormDist = TruncnormDist('start_attendance_base',
+                                                         PROBABILITY_ATTENDING_SCREENING_START_MEAN,
+                                                         PROBABILITY_ATTENDING_SCREENING_START_STDDEV,
+                                                         key=PROBABILITY_ATTENDING_SCREENING_KEY)
+
+    BASE_ATTENDANCE_END: TruncnormDist = TruncnormDist('end_attendance_base',
+                                                       PROBABILITY_ATTENDING_SCREENING_END_MEAN,
+                                                       PROBABILITY_ATTENDING_SCREENING_END_STDDEV,
+                                                       key=PROBABILITY_ATTENDING_SCREENING_KEY)
     # TODO: update ATTENDED_PREVIOUS_SCREENING_MULTIPLIER for research team's decision on distribution:
     ATTENDED_PREVIOUS_SCREENING_MULTIPLIER: TruncnormDist = TruncnormDist('attended_prev_screening_multiplier',
                                                                           ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_MEAN,
@@ -109,3 +118,12 @@ SCREENING = __Screening()
 ###############################
 
 VACCINATION_DATE_COLUMN_NAME = "vaccination_date"
+
+
+###################################
+# Scale-up Intervention Constants #
+###################################
+SCALE_UP_START_DT = datetime(2021, 1, 1)
+SCALE_UP_END_DT = datetime(2030, 1, 1)
+SCREENING_SCALE_UP_GOAL_COVERAGE = 0.50
+SCREENING_SCALE_UP_DIFFERENCE = SCREENING_SCALE_UP_GOAL_COVERAGE - PROBABILITY_ATTENDING_SCREENING_START_MEAN

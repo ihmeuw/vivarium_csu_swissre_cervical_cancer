@@ -5,3 +5,4 @@ from vivarium_csu_swissre_cervical_cancer.components.observers import (Mortality
                                                                        ScreeningObserver,
                                                                        VaccinationObserver)
 from vivarium_csu_swissre_cervical_cancer.components.screening import ScreeningAlgorithm
+from vivarium_csu_swissre_cervical_cancer.components.intervention import Intervention

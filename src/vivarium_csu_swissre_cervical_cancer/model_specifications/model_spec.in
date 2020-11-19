@@ -16,9 +16,9 @@ components:
         - DisabilityObserver()
         - StateMachineObserver('cervical_cancer')
         - StateMachineObserver('screening_result', 'False')
-
         - ScreeningObserver()
         - VaccinationObserver()
+        - Intervention()
 
 configuration:
     input_data:
@@ -65,6 +65,9 @@ configuration:
         transition_rate:
             mean: 4.71
             se: 0.94
+
+    screening_algorithm:
+        scenario: 'baseline'
 
     metrics:
         disability:

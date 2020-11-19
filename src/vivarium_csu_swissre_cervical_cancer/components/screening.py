@@ -50,6 +50,14 @@ class ScreeningAlgorithm:
         self.screening_parameters = {parameter.name: parameter.get_random_variable(draw)
                                      for parameter in data_values.SCREENING}
 
+        self.base_screening_attendance = builder.lookup.build_table(
+            self.screening_parameters[data_values.SCREENING.BASE_ATTENDANCE_START.name])
+
+        self.probability_attending_screening = builder.value.register_value_producer(
+            data_values.PROBABILITY_ATTENDING_SCREENING_KEY,
+            source=self.get_screening_attendance_probability,
+            requires_columns=[data_values.ATTENDED_LAST_SCREENING])
+
         required_columns = [AGE, models.CERVICAL_CANCER_MODEL_NAME]
         columns_created = [
             models.SCREENING_RESULT_MODEL_NAME,
@@ -110,7 +118,7 @@ class ScreeningAlgorithm:
         previous_screening.loc[under_screening_age] = pd.NaT
 
         attended_previous = pd.Series(self.randomness.get_draw(pop.index, 'attended_previous')
-                                      < self.screening_parameters[data_values.SCREENING.BASE_ATTENDANCE.name],
+                                      < self.screening_parameters[data_values.SCREENING.BASE_ATTENDANCE_START.name],
                                       name=data_values.ATTENDED_LAST_SCREENING)
 
         self.population_view.update(
@@ -127,7 +135,7 @@ class ScreeningAlgorithm:
                                & (age <= data_values.LAST_SCREENING_AGE))
 
         # Get probability of attending the next screening for scheduled simulants
-        p_attends_screening = self._get_screening_attendance_probability(pop)
+        p_attends_screening = self.probability_attending_screening(pop.index)
 
         # Get all simulants who actually attended their screening
         attends_screening: pd.Series = (
@@ -160,54 +168,29 @@ class ScreeningAlgorithm:
             pd.concat([screening_result, previous_screening, next_screening, attended_last_screening], axis=1)
         )
 
-    def _get_screening_attendance_probability(self, pop: pd.DataFrame) -> pd.Series:
-        base_first_screening_attendance = self.screening_parameters[
-            data_values.SCREENING.BASE_ATTENDANCE.name
-        ]
+    def get_screening_attendance_probability(self, idx) -> pd.Series:
+        pop = self.population_view.get(idx)
+
+        base_first_screening_attendance = self.base_screening_attendance(idx)
         attended_previous_screening_multiplier = self.screening_parameters[
             data_values.SCREENING.ATTENDED_PREVIOUS_SCREENING_MULTIPLIER.name
         ]
 
-        # Derivation where p1 == prob attends screening given attended previous,
-        # p2 == prob attends screening given didn't attend previous, p == prob attends screening,
-        # and m == multiplier drawn from ~1.89
-        # p1 = m * p2
-        # p = p1 * p + p2 * (1 - p)
-        # p = m * p2 * p + p2 * (1 - p)
-        # p = p2 * (m * p + 1 - p) = p2 * (1 + (m - 1) * p)
-        # p2 = p / (1 + p * (m - 1))
-        screening_not_attended_previous = base_first_screening_attendance / (
-                1 + base_first_screening_attendance * (attended_previous_screening_multiplier - 1))
-        screening_attended_previous = attended_previous_screening_multiplier * screening_not_attended_previous
+        screening_attended_previous, screening_not_attended_previous = get_differential_screening_probabilities(
+            attended_previous_screening_multiplier, base_first_screening_attendance)
 
-        if self.scenario == scenarios.SCENARIOS.baseline:
-            conditional_probabilities = {
-                True: screening_attended_previous,
-                False: screening_not_attended_previous,
-            }
-        # else:
-        #     if self.clock() < project_globals.RAMP_UP_START:
-        #         conditional_probabilities = {
-        #             True: screening_start_attended_previous,
-        #             False: screening_start_not_attended_previous,
-        #         }
-        #     elif self.clock() < project_globals.RAMP_UP_END:
-        #         elapsed_time = self.clock() - project_globals.RAMP_UP_START
-        #         progress_to_ramp_up_end = elapsed_time / (project_globals.RAMP_UP_END - project_globals.RAMP_UP_START)
-        #         attended_prev_ramp_up = screening_end_attended_previous - screening_start_attended_previous
-        #         not_attended_prev_ramp_up = screening_end_not_attended_previous - screening_start_not_attended_previous
+        prob_attending_screening = screening_not_attended_previous.copy()
+        prob_attending_screening[pop.loc[:, data_values.ATTENDED_LAST_SCREENING]] = screening_attended_previous.loc[
+            pop.loc[:, data_values.ATTENDED_LAST_SCREENING]]
+
+        # conditional_probabilities = {
+        #     True: screening_attended_previous,
+        #     False: screening_not_attended_previous,
+        # }
         #
-        #         conditional_probabilities = {
-        #             True: attended_prev_ramp_up * progress_to_ramp_up_end + screening_start_attended_previous,
-        #             False: not_attended_prev_ramp_up * progress_to_ramp_up_end + screening_start_not_attended_previous,
-        #         }
-        #     else:
-        #         conditional_probabilities = {
-        #             True: screening_end_attended_previous,
-        #             False: screening_end_not_attended_previous,
-        #         }
+        # return pop.loc[:, data_values.ATTENDED_LAST_SCREENING].apply(lambda x: conditional_probabilities[x])
+        return prob_attending_screening
 
-        return pop.loc[:, data_values.ATTENDED_LAST_SCREENING].apply(lambda x: conditional_probabilities[x])
 
     def _do_screening(self, pop: pd.Series) -> pd.Series:
         """Perform screening for all simulants who attended their screening"""
@@ -326,3 +309,18 @@ class ScreeningAlgorithm:
         ).loc[quinquennial_screening]
 
         return previous_screening + time_to_next_screening.astype('timedelta64[ns]')
+
+
+def get_differential_screening_probabilities(attended_previous_screening_multiplier, base_screening_attendance):
+    # Derivation where p1 == prob attends screening given attended previous,
+    # p2 == prob attends screening given didn't attend previous, p == prob attends screening,
+    # and m == multiplier drawn from ~1.89
+    # p1 = m * p2
+    # p = p1 * p + p2 * (1 - p)
+    # p = m * p2 * p + p2 * (1 - p)
+    # p = p2 * (m * p + 1 - p) = p2 * (1 + (m - 1) * p)
+    # p2 = p / (1 + p * (m - 1))
+    screening_not_attended_previous = base_screening_attendance / (
+            1 + base_screening_attendance * (attended_previous_screening_multiplier - 1))
+    screening_attended_previous = attended_previous_screening_multiplier * screening_not_attended_previous
+    return screening_attended_previous, screening_not_attended_previous
