@@ -384,7 +384,7 @@ def _expand_age_bins(df: pd.DataFrame, index_col=ARTIFACT_INDEX_COLUMNS, prev_ag
 
 
 def _load_hrhpv_raw(path) -> pd.DataFrame:
-    df = pd.read_hdf(path)
+    df = pd.read_csv(path)
     df = df.set_index(ARTIFACT_INDEX_COLUMNS)
     return df
 
