@@ -68,7 +68,7 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         data_keys.CERVICAL_CANCER.HRHPV_INCIDENCE_RATE: load_incidence_rate,
         data_keys.CERVICAL_CANCER.BCC_HPV_POS_INCIDENCE_RATE: load_incidence_rate,
         data_keys.CERVICAL_CANCER.BCC_HPV_NEG_INCIDENCE_RATE: load_incidence_rate,
-        data_keys.CERVICAL_CANCER.INCIDENCE_RATE: load_incidence_rate,
+        # data_keys.CERVICAL_CANCER.INCIDENCE_RATE: load_incidence_rate,
         data_keys.CERVICAL_CANCER.DISABILITY_WEIGHT: load_disability_weight,
         data_keys.CERVICAL_CANCER.EMR: load_emr,
         data_keys.CERVICAL_CANCER.CSMR: load_csmr,
