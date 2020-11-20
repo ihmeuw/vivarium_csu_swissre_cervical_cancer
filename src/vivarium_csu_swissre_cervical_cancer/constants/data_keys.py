@@ -49,7 +49,8 @@ class __CervicalCancer(NamedTuple):
         'sequela.hpv_positive_benign_cervical_cancer.incidence_rate')
     BCC_HPV_NEG_INCIDENCE_RATE: TargetString = TargetString(
         'sequela.hpv_negative_benign_cervical_cancer.incidence_rate')
-    INCIDENCE_RATE: TargetString = TargetString('cause.invasive_cervical_cancer.incidence_rate')
+    # removed since currently using a constant value
+    # INCIDENCE_RATE: TargetString = TargetString('cause.invasive_cervical_cancer.incidence_rate')
     DISABILITY_WEIGHT: TargetString = TargetString('cause.invasive_cervical_cancer.disability_weight')
     EMR: TargetString = TargetString('cause.invasive_cervical_cancer.excess_mortality_rate')
     CSMR: TargetString = TargetString('cause.cervical_cancer.cause_specific_mortality_rate')

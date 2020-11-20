@@ -8,7 +8,10 @@ from vivarium_csu_swissre_cervical_cancer.utilities import TruncnormDist
 REMISSION_RATE = 0.1
 
 # BCC duration: "temporarily use 14.5 years"
-BCC_DURATION = 14.5
+BCC_MEAN_SOJOURN_TIME = 14.5
+
+# Test value
+ICC_INCIDENCE_RATE = 1 / BCC_MEAN_SOJOURN_TIME
 
 # relative risk of HPV 16/18 causing CIN2+ = 27.4 (95%CI 19.7 to 38.0)
 # from https://vivarium-research.readthedocs.io/en/latest/concept_models/vivarium_swissre_cervical
