@@ -181,10 +181,10 @@ def load_prevalence(key: str, location: str) -> pd.DataFrame:
 
 def load_rr_hrhpv(columns) -> pd.Series:
     """Get random variables based on distribution for RR hrHPV, columns should be those in the prevalence df"""
-    per_draw_rr = pd.Series(
-        [utilities.get_lognormal_random_variable(*data_values.RR_HRHPV_PARAMS, x) for x in range(0, 1000)],
-        index=columns)
-    return per_draw_rr * 0
+    # per_draw_rr = pd.Series(
+    #     [utilities.get_lognormal_random_variable(*data_values.RR_HRHPV_PARAMS, x) for x in range(0, 1000)],
+    #     index=columns)
+    return 0
 
 
 def load_hrhpv_remission(key: str, location: str) -> pd.DataFrame:
@@ -390,9 +390,9 @@ def _expand_age_bins(df: pd.DataFrame, index_col=ARTIFACT_INDEX_COLUMNS, prev_ag
 
 
 def _load_hrhpv_raw(path) -> pd.DataFrame:
-    df = pd.read_csv(path)
-    df = df.set_index(ARTIFACT_INDEX_COLUMNS)
-    return df * 0
+    # df = pd.read_csv(path)
+    # df = df.set_index(ARTIFACT_INDEX_COLUMNS)
+    return 0
 
 
 def get_entity(key: str):
