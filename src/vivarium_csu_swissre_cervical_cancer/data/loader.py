@@ -218,7 +218,8 @@ def load_incidence_rate(key: str, location: str) -> pd.DataFrame:
         hrhpv_prevalence = load_prevalence(data_keys.CERVICAL_CANCER.HRHPV_PREVALENCE, location)
         # hrhpv_rr = load_rr_hrhpv(bcc_prevalence.columns)
         hrhpv_rr = 0
-        paf = load_paf(hrhpv_prevalence, hrhpv_rr)
+        # paf = load_paf(hrhpv_prevalence, hrhpv_rr)
+        paf = 0
         if key == data_keys.CERVICAL_CANCER.BCC_HPV_POS_INCIDENCE_RATE:
             # incidence rate = incidence_c432 × (1−PAF) × RR_hrHPV
             raw_bcc_incidence_rate = _transform_raw_data(location, paths.RAW_INCIDENCE_RATE_DATA_PATH, False)
