@@ -206,13 +206,13 @@ def load_incidence_rate(key: str, location: str) -> pd.DataFrame:
     """Get the incidence rate given a key."""
     # bcc_prevalence = (load_prevalence(data_keys.CERVICAL_CANCER.BCC_PREVALENCE, location)
     #                   + load_prevalence(data_keys.CERVICAL_CANCER.BCC_PREVALENCE_WITH_HRHPV, location))
-    if key == data_keys.CERVICAL_CANCER.INCIDENCE_RATE:
-        pass
+    # if key == data_keys.CERVICAL_CANCER.INCIDENCE_RATE:
+    #     pass
         # i_ICC = (incidence_c432/prev_BCC)
         # incidence_rate = _transform_raw_data(location, paths.RAW_INCIDENCE_RATE_DATA_PATH, False)
         # incidence_rate = _expand_age_bins(incidence_rate)
         # incidence_rate = incidence_rate / bcc_prevalence
-    elif key == data_keys.CERVICAL_CANCER.HRHPV_INCIDENCE_RATE:
+    if key == data_keys.CERVICAL_CANCER.HRHPV_INCIDENCE_RATE:
         return _load_hrhpv_raw(paths.HRHPV_INCIDENCE_PATH)
     else:
         hrhpv_prevalence = load_prevalence(data_keys.CERVICAL_CANCER.HRHPV_PREVALENCE, location)
