@@ -47,10 +47,10 @@ class MeasureData(NamedTuple):
     ylds: pd.DataFrame
     deaths: pd.DataFrame
     disease_state_person_time: pd.DataFrame
-    screening_state_person_time: pd.DataFrame
+    # screening_state_person_time: pd.DataFrame
     disease_transition_count: pd.DataFrame
-    screening_transition_count: pd.DataFrame
-    event_count: pd.DataFrame
+    # screening_transition_count: pd.DataFrame
+    # event_count: pd.DataFrame
     # treatment: pd.DataFrame
 
     def dump(self, output_dir: Path):
