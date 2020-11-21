@@ -27,14 +27,14 @@ def make_measure_data(data):
     measure_data = MeasureData(
         population=get_population_data(data),
         person_time=get_measure_data(data, 'person_time'),
-        ylls=get_by_cause_measure_data(data, 'ylls', True, True),
-        ylds=get_by_cause_measure_data(data, 'ylds', True, True),
-        deaths=get_by_cause_measure_data(data, 'deaths', True, True),
-        disease_state_person_time=get_state_person_time_measure_data(data, 'disease_state_person_time', True, True),
-        screening_state_person_time=get_state_person_time_measure_data(data, 'screening_state_person_time'),
-        disease_transition_count=get_transition_count_measure_data(data, 'disease_transition_count', True, True),
-        screening_transition_count=get_transition_count_measure_data(data, 'screening_transition_count'),
-        event_count=get_measure_data(data, 'event_count'),
+        ylls=get_by_cause_measure_data(data, 'ylls', False, False),
+        ylds=get_by_cause_measure_data(data, 'ylds', False, False),
+        deaths=get_by_cause_measure_data(data, 'deaths', False, False),
+        disease_state_person_time=get_state_person_time_measure_data(data, 'disease_state_person_time', False, False),
+        # screening_state_person_time=get_state_person_time_measure_data(data, 'screening_state_person_time'),
+        disease_transition_count=get_transition_count_measure_data(data, 'disease_transition_count', False, False),
+        # screening_transition_count=get_transition_count_measure_data(data, 'screening_transition_count'),
+        # event_count=get_measure_data(data, 'event_count'),
         # treatment=get_measure_data(data, 'treatment_count'),
     )
     return measure_data

@@ -30,18 +30,12 @@ THROWAWAY_COLUMNS = [f'{state}_event_count' for state in models.STATES]
 
 TOTAL_POPULATION_COLUMN_TEMPLATE = 'total_population_{POP_STATE}'
 PERSON_TIME_COLUMN_TEMPLATE = 'person_time_in_{YEAR}_age_cohort_{AGE_COHORT}'
-DEATH_COLUMN_TEMPLATE = ('death_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_age_cohort_{AGE_COHORT}'
-                         '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}')
-YLLS_COLUMN_TEMPLATE = ('ylls_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_age_cohort_{AGE_COHORT}'
-                        '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}')
-YLDS_COLUMN_TEMPLATE = ('ylds_due_to_{CAUSE_OF_DISABILITY}_in_{YEAR}_age_cohort_{AGE_COHORT}'
-                        '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}')
-DISEASE_STATE_PERSON_TIME_COLUMN_TEMPLATE = ('{DISEASE_STATE}_person_time_in_{YEAR}_age_cohort_'
-                                             '{AGE_COHORT}_screening_result_{SCREENING_STATE}_'
-                                             'vaccination_state_{VAX_STATE}')
+DEATH_COLUMN_TEMPLATE = 'death_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_age_cohort_{AGE_COHORT}'
+YLLS_COLUMN_TEMPLATE = 'ylls_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_age_cohort_{AGE_COHORT}'
+YLDS_COLUMN_TEMPLATE = 'ylds_due_to_{CAUSE_OF_DISABILITY}_in_{YEAR}_age_cohort_{AGE_COHORT}'
+DISEASE_STATE_PERSON_TIME_COLUMN_TEMPLATE = '{DISEASE_STATE}_person_time_in_{YEAR}_age_cohort_{AGE_COHORT}'
 SCREENING_STATE_PERSON_TIME_COLUMN_TEMPLATE = '{SCREENING_STATE}_person_time_in_{YEAR}_age_cohort_{AGE_COHORT}'
-DISEASE_TRANSITION_COUNT_COLUMN_TEMPLATE = ('{DISEASE_TRANSITION}_event_count_in_{YEAR}_age_cohort_{AGE_COHORT}'
-                                            '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}')
+DISEASE_TRANSITION_COUNT_COLUMN_TEMPLATE = '{DISEASE_TRANSITION}_event_count_in_{YEAR}_age_cohort_{AGE_COHORT}'
 SCREENING_TRANSITION_COUNT_COLUMN_TEMPLATE = '{SCREENING_TRANSITION}_event_count_in_{YEAR}_age_cohort_{AGE_COHORT}'
 EVENT_COUNT_COLUMN_TEMPLATE = '{EVENT}_in_{YEAR}_age_cohort_{AGE_COHORT}'
 
@@ -52,10 +46,10 @@ COLUMN_TEMPLATES = {
     'ylls': YLLS_COLUMN_TEMPLATE,
     'ylds': YLDS_COLUMN_TEMPLATE,
     'disease_state_person_time': DISEASE_STATE_PERSON_TIME_COLUMN_TEMPLATE,
-    'screening_state_person_time': SCREENING_STATE_PERSON_TIME_COLUMN_TEMPLATE,
+    # 'screening_state_person_time': SCREENING_STATE_PERSON_TIME_COLUMN_TEMPLATE,
     'disease_transition_count': DISEASE_TRANSITION_COUNT_COLUMN_TEMPLATE,
-    'screening_transition_count': SCREENING_TRANSITION_COUNT_COLUMN_TEMPLATE,
-    'event_count': EVENT_COUNT_COLUMN_TEMPLATE,
+    # 'screening_transition_count': SCREENING_TRANSITION_COUNT_COLUMN_TEMPLATE,
+    # 'event_count': EVENT_COUNT_COLUMN_TEMPLATE,
 }
 
 NON_COUNT_TEMPLATES = [
