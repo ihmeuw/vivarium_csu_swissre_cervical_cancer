@@ -4,7 +4,6 @@ components:
             - BasePopulation()
             - Mortality()
         risks:
-            - Risk('risk_factor.no_hpv_vaccination')
             - RiskEffect('risk_factor.no_hpv_vaccination', 'sequela.high_risk_hpv.incidence_rate')
             - RiskEffect('risk_factor.no_hpv_vaccination', 'sequela.benign_cervical_cancer_to_benign_cervical_cancer_with_hpv.transition_rate')
             - RiskEffect('risk_factor.no_hpv_vaccination', 'sequela.invasive_cervical_cancer_to_invasive_cervical_cancer_with_hpv.transition_rate')
@@ -19,6 +18,7 @@ components:
         - ScreeningObserver()
         - VaccinationObserver()
         - Intervention()
+        - HpvVaccineExposure('risk_factor.no_hpv_vaccination')
 
 configuration:
     input_data:

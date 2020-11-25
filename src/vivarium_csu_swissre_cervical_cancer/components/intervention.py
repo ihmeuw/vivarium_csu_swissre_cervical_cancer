@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import typing
 from typing import Tuple, Union
+from dateutil.relativedelta import relativedelta
 
 import pandas as pd
 
@@ -66,20 +67,11 @@ class Intervention:
 
     def vax_intervention_effect(self, idx: pd.Index, target: pd.Series) -> pd.Series:
         effect: pd.Series = pd.Series(0.0, idx)
-
         if self.scenario == scenarios.SCENARIOS.alternative:
-            simulant_ages = self.population_view.subview(['age']).get(idx)['age']
-            last_vax_eligibility_date = (
-                    (data_values.LAST_VACCINATION_AGE - simulant_ages).apply(lambda x: timedelta(days=x*365))
-                    + self.clock())
             if data_values.SCALE_UP_START_DT <= self.clock() < data_values.SCALE_UP_END_DT:
-                last_vax_date = last_vax_eligibility_date.apply(lambda dt: max(
-                    data_values.SCALE_UP_START_DT, min(dt, self.clock())))
-                effect = get_effect(last_vax_date, 0.3)
+                effect = get_effect(self.clock(), 0.3)
             elif self.clock() >= data_values.SCALE_UP_END_DT:
-                last_vax_date = last_vax_eligibility_date.apply(lambda dt: max(
-                    data_values.SCALE_UP_START_DT, min(dt, data_values.SCALE_UP_END_DT)))
-                effect = get_effect(last_vax_date, 0.3)
+                effect = get_effect(data_values.SCALE_UP_END_DT, 0.3)
 
         return target - effect
 

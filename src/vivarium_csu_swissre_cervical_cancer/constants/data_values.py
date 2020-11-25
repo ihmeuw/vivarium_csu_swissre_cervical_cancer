@@ -118,6 +118,7 @@ SCREENING = __Screening()
 ###############################
 
 VACCINATION_DATE_COLUMN_NAME = "vaccination_date"
+LAST_VACCINATION_DATE = "last_possible_vaccination_date"
 FIRST_VACCINATION_AGE = 15
 LAST_VACCINATION_AGE = 45
 
