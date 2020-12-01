@@ -1,6 +1,6 @@
 from math import inf, log
 from typing import NamedTuple
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 from vivarium_csu_swissre_cervical_cancer.utilities import TruncnormDist
@@ -35,6 +35,10 @@ PROBABILITY_ATTENDING_SCREENING_END_STDDEV = 0.005
 ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_KEY = 'attended_previous_screening_multiplier'
 ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_MEAN = 1.89
 ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_STDDEV = 0.36
+
+P_SYMPTOMS = 'p_symptomatic_presentation'
+MST_SYMPTOMS = 4
+MEAN_SYMPTOMS = timedelta(days=365 * MST_SYMPTOMS)
 
 # PROBABILITY_ATTENDING_GIVEN_PREVIOUS_NO_ATTENDANCE derivation
 # p = prob attends screening
@@ -91,6 +95,8 @@ class __Screening(NamedTuple):
                                                                           inf,
                                                                           key=ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_KEY
                                                                           )
+    HAS_SYMPTOMS_SENSITIVITY: TruncnormDist = TruncnormDist('has_symptoms_sensitivity', 1.0, 0.0)
+    HAS_SYMPTOMS_SPECIFICITY: TruncnormDist = TruncnormDist('has_symptoms_specificity', 1.0, 0.0)
 
     # START_ATTENDED_PREV_ATTENDANCE: TruncnormDist = TruncnormDist('start_attendance_attended_prev', 0.397, 0.00397,
     #                                                               key=PROBABILITY_ATTENDING_SCREENING_KEY)
