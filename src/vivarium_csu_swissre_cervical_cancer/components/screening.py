@@ -49,6 +49,7 @@ class ScreeningAlgorithm:
         draw = builder.configuration.input_data.input_draw_number
         self.screening_parameters = {parameter.name: parameter.get_random_variable(draw)
                                      for parameter in data_values.SCREENING}
+        self.screening_parameters[data_values.P_SYMPTOMS] = self.step_size() / data_values.MEAN_SYMPTOMS
 
         self.base_screening_attendance = builder.lookup.build_table(
             self.screening_parameters[data_values.SCREENING.BASE_ATTENDANCE_START.name])
@@ -130,7 +131,15 @@ class ScreeningAlgorithm:
         # Get all simulants with a screening scheduled during this timestep
         pop = self.population_view.get(event.index, query='alive == "alive"')
         age = pop.loc[:, AGE]
-        screening_scheduled = ((pop.loc[:, data_values.NEXT_SCREENING_DATE] < self.clock())
+
+        # Get all simulants who have invasive cervical cancer and are symptomatic on this timestep
+        has_symptoms = self.is_symptomatic(pop)
+
+        # Set next screening date for simulants who are symptomatic to today
+        next_screening_date = pop.loc[:, data_values.NEXT_SCREENING_DATE].copy()
+        next_screening_date.loc[has_symptoms] = self.clock()
+
+        screening_scheduled = ((next_screening_date <= self.clock())
                                & (age >= data_values.FIRST_SCREENING_AGE)
                                & (age <= data_values.LAST_SCREENING_AGE))
 
@@ -139,7 +148,8 @@ class ScreeningAlgorithm:
 
         # Get all simulants who actually attended their screening
         attends_screening: pd.Series = (
-                screening_scheduled & (self.randomness.get_draw(pop.index, 'attendance') < p_attends_screening)
+                screening_scheduled
+                & (has_symptoms | (self.randomness.get_draw(pop.index, 'attendance') < p_attends_screening))
         )
 
         # Update attended previous screening column
@@ -201,18 +211,21 @@ class ScreeningAlgorithm:
             models.NEGATIVE_STATE_NAME,
             models.POSITIVE_HRHPV_STATE_NAME
         ])
-
+        has_symptoms = self.is_symptomatic(pop)
         twentysomething = ((data_values.FIRST_SCREENING_AGE <= pop.loc[:, AGE])
                            & (pop.loc[:, AGE] < data_values.MID_SCREENING_AGE))
         cotest_eligible = ((data_values.MID_SCREENING_AGE <= pop.loc[:, AGE])
                            & (pop.loc[:, AGE] < data_values.LAST_SCREENING_AGE))
         # TODO: check/ensure these are mutually exclusive groups
-        cotesters = no_cancer & cotest_eligible & screened
+        cotesters = no_cancer & cotest_eligible & screened & ~has_symptoms
         screened_remission = screened & in_remission & ~cotesters
-        cytologists = (~no_cancer | twentysomething) & (~in_remission & screened)
+        cytologists = (~no_cancer | twentysomething) & (~in_remission & screened) & ~has_symptoms
 
         # Get sensitivity values for all individuals
         cancer_sensitivity = pd.Series(0.0, index=pop.index)
+        cancer_sensitivity.loc[has_symptoms] = self.screening_parameters[
+            data_values.SCREENING.HAS_SYMPTOMS_SENSITIVITY.name
+        ]
         cancer_sensitivity.loc[screened_remission] = self.screening_parameters[
             data_values.SCREENING.REMISSION_SENSITIVITY.name
         ]
@@ -309,6 +322,16 @@ class ScreeningAlgorithm:
         ).loc[quinquennial_screening]
 
         return previous_screening + time_to_next_screening.astype('timedelta64[ns]')
+
+    def is_symptomatic(self, pop: pd.DataFrame):
+        return ((pop.loc[:, models.CERVICAL_CANCER_MODEL_NAME].isin(
+            [models.INVASIVE_CANCER_WITH_HPV_STATE_NAME, models.INVASIVE_CANCER_STATE_NAME]))
+                & (self.randomness.get_draw(pop.index, 'symptomatic_presentation')
+                   < self.screening_parameters[data_values.P_SYMPTOMS])
+                & ~(pop.loc[:, models.SCREENING_RESULT_MODEL_NAME].isin(
+                    [models.POSITIVE_CERVICAL_CANCER_STATE_NAME, models.POSITIVE_CERVICAL_CANCER_WITH_HRHPV_STATE_NAME]
+                ))
+                )
 
 
 def get_differential_screening_probabilities(attended_previous_screening_multiplier, base_screening_attendance):
