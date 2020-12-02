@@ -7,6 +7,8 @@ components:
             - RiskEffect('risk_factor.no_hpv_vaccination', 'sequela.high_risk_hpv.incidence_rate')
             - RiskEffect('risk_factor.no_hpv_vaccination', 'sequela.benign_cervical_cancer_to_benign_cervical_cancer_with_hpv.transition_rate')
             - RiskEffect('risk_factor.no_hpv_vaccination', 'sequela.invasive_cervical_cancer_to_invasive_cervical_cancer_with_hpv.transition_rate')
+            - RiskEffect('risk_factor.no_bcc_treatment', 'sequela.benign_cervical_cancer_to_invasive_cervical_cancer.transition_rate')
+            - RiskEffect('risk_factor.no_bcc_treatment', 'sequela.benign_cervical_cancer_with_hpv_to_invasive_cervical_cancer_with_hpv.transition_rate')
 
     vivarium_csu_swissre_cervical_cancer.components:
         - CervicalCancer()
@@ -19,6 +21,7 @@ components:
         - VaccinationObserver()
         - Intervention()
         - HpvVaccineExposure('risk_factor.no_hpv_vaccination')
+        - TreatmentExposure('risk_factor.no_bcc_treatment')
 
 configuration:
     input_data:
@@ -65,6 +68,18 @@ configuration:
         transition_rate:
             mean: 4.71
             se: 0.94
+
+    no_bcc_treatment:
+        exposure: 0.2
+
+    effect_of_no_bcc_treatment_on_benign_cervical_cancer_to_invasive_cervical_cancer:
+        transition_rate:
+            mean: 33
+            se: 3
+    effect_of_no_bcc_treatment_on_benign_cervical_cancer_with_hpv_to_invasive_cervical_cancer_with_hpv:
+        transition_rate:
+            mean: 33
+            se: 3
 
     screening_algorithm:
         scenario: 'baseline'
