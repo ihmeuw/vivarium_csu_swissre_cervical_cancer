@@ -13,7 +13,7 @@ components:
         - ScreeningAlgorithm()
         - MortalityObserver()
         - DisabilityObserver()
-        - StateMachineObserver('cervical_cancer', 'False')
+        - StateMachineObserver('cervical_cancer')
         - StateMachineObserver('screening_result', 'False')
         - ScreeningObserver()
         - VaccinationObserver()
