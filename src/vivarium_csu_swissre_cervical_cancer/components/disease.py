@@ -112,7 +112,7 @@ def CervicalCancer():
         source_data_type='rate',
         get_data_functions={
             'transition_rate':
-                lambda builder, *_: builder.data.load(models.CERVICAL_CANCER.INCIDENCE_RATE)
+                lambda *_: data_values.ICC_INCIDENCE_RATE
         }
     )
     bcc.add_transition(
@@ -131,7 +131,7 @@ def CervicalCancer():
         source_data_type='rate',
         get_data_functions={
             'transition_rate':
-                lambda builder, *_: builder.data.load(models.CERVICAL_CANCER.INCIDENCE_RATE)
+                lambda *_: data_values.ICC_INCIDENCE_RATE
         }
     )
     bcc_with_hrhpv.add_transition(
