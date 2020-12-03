@@ -25,8 +25,6 @@ configuration:
         location: {{ location_proper }}
         input_draw_number: 0
         artifact_path: {{ artifact_directory }}/{{ location_sanitized }}.hdf
-        # XXX for local MacBook:::
-        # artifact_path: /Volumes/costeffectiveness/artifacts/vivarium_csu_swissre_cervical_cancer/{{ location_sanitized }}.hdf
     interpolation:
         order: 0
         extrapolate: True

@@ -49,11 +49,15 @@ class __CervicalCancer(NamedTuple):
         'sequela.hpv_positive_benign_cervical_cancer.incidence_rate')
     BCC_HPV_NEG_INCIDENCE_RATE: TargetString = TargetString(
         'sequela.hpv_negative_benign_cervical_cancer.incidence_rate')
-    INCIDENCE_RATE: TargetString = TargetString('cause.invasive_cervical_cancer.incidence_rate')
     DISABILITY_WEIGHT: TargetString = TargetString('cause.invasive_cervical_cancer.disability_weight')
     EMR: TargetString = TargetString('cause.invasive_cervical_cancer.excess_mortality_rate')
     CSMR: TargetString = TargetString('cause.cervical_cancer.cause_specific_mortality_rate')
     RESTRICTIONS: TargetString = TargetString('cause.cervical_cancer.restrictions')
+
+    # Useful keys not for the artifact
+    RAW_BCC_PREVALENCE = TargetString('sequela.raw_benign_cervical_cancer.prevalence')
+    RAW_BCC_INCIDENCE_RATE = TargetString('sequela.raw_benign_cervical_cancer.incidence_rate')
+    RAW_ICC_PREVALENCE = TargetString('cause.raw_invasive_cervical_cancer.prevalence')
 
     @property
     def name(self):
