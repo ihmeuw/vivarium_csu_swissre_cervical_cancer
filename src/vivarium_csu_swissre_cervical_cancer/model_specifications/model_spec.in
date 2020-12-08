@@ -68,16 +68,16 @@ configuration:
             se: 0.94
 
     no_bcc_treatment:
-        exposure: 0.2
+        exposure: 0.8
 
     effect_of_no_bcc_treatment_on_benign_cervical_cancer_to_invasive_cervical_cancer:
         transition_rate:
-            mean: 33
-            se: 3
+            mean: 4.55 
+            se: 0.45
     effect_of_no_bcc_treatment_on_benign_cervical_cancer_with_hpv_to_invasive_cervical_cancer_with_hpv:
         transition_rate:
-            mean: 33
-            se: 3
+            mean: 4.55
+            se: 0.45
 
     screening_algorithm:
         scenario: 'baseline'
