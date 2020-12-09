@@ -35,7 +35,6 @@ def make_measure_data(data):
         disease_transition_count=get_transition_count_measure_data(data, 'disease_transition_count', True, True),
         screening_transition_count=get_transition_count_measure_data(data, 'screening_transition_count'),
         event_count=get_measure_data(data, 'event_count'),
-        treatment=get_measure_data(data, 'treatment_count'),
     )
     return measure_data
 
@@ -51,7 +50,6 @@ class MeasureData(NamedTuple):
     disease_transition_count: pd.DataFrame
     screening_transition_count: pd.DataFrame
     event_count: pd.DataFrame
-    treatment: pd.DataFrame
 
     def dump(self, output_dir: Path):
         for key, df in self._asdict().items():

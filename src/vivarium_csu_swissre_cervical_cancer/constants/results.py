@@ -15,6 +15,8 @@ SCREENING_ATTENDED = 'screening_attended_count'
 
 VACCINATED_FOR_HPV = 'hpv_vaccinated_count'
 
+TREATED_FOR_BCC = 'treatment_count'
+
 # Columns from parallel runs
 INPUT_DRAW_COLUMN = 'input_draw'
 RANDOM_SEED_COLUMN = 'random_seed'
@@ -31,17 +33,17 @@ THROWAWAY_COLUMNS = [f'{state}_event_count' for state in models.STATES]
 TOTAL_POPULATION_COLUMN_TEMPLATE = 'total_population_{POP_STATE}'
 PERSON_TIME_COLUMN_TEMPLATE = 'person_time_in_{YEAR}_age_cohort_{AGE_COHORT}'
 DEATH_COLUMN_TEMPLATE = ('death_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_age_cohort_{AGE_COHORT}'
-                         '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}')
+                         '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}_treatment_state_{TREAT_STATE}')
 YLLS_COLUMN_TEMPLATE = ('ylls_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_age_cohort_{AGE_COHORT}'
-                        '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}')
+                        '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}_treatment_state_{TREAT_STATE}')
 YLDS_COLUMN_TEMPLATE = ('ylds_due_to_{CAUSE_OF_DISABILITY}_in_{YEAR}_age_cohort_{AGE_COHORT}'
-                        '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}')
+                        '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}_treatment_state_{TREAT_STATE}')
 DISEASE_STATE_PERSON_TIME_COLUMN_TEMPLATE = ('{DISEASE_STATE}_person_time_in_{YEAR}_age_cohort_'
                                              '{AGE_COHORT}_screening_result_{SCREENING_STATE}_'
-                                             'vaccination_state_{VAX_STATE}')
+                                             'vaccination_state_{VAX_STATE}_treatment_state_{TREAT_STATE}')
 SCREENING_STATE_PERSON_TIME_COLUMN_TEMPLATE = '{SCREENING_STATE}_person_time_in_{YEAR}_age_cohort_{AGE_COHORT}'
 DISEASE_TRANSITION_COUNT_COLUMN_TEMPLATE = ('{DISEASE_TRANSITION}_event_count_in_{YEAR}_age_cohort_{AGE_COHORT}'
-                                            '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}')
+                                            '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}_treatment_state_{TREAT_STATE}')
 SCREENING_TRANSITION_COUNT_COLUMN_TEMPLATE = '{SCREENING_TRANSITION}_event_count_in_{YEAR}_age_cohort_{AGE_COHORT}'
 EVENT_COUNT_COLUMN_TEMPLATE = '{EVENT}_in_{YEAR}_age_cohort_{AGE_COHORT}'
 
@@ -64,7 +66,7 @@ NON_COUNT_TEMPLATES = [
 POP_STATES = ('living', 'dead', 'tracked', 'untracked')
 YEARS = tuple(range(2020, 2041))
 AGE_COHORTS = tuple(f'{2020 - (x + 5)}_to_{2020 - x}' for x in range(15, 85, 5))
-EVENTS = (SCREENING_SCHEDULED, SCREENING_ATTENDED, VACCINATED_FOR_HPV)
+EVENTS = (SCREENING_SCHEDULED, SCREENING_ATTENDED, VACCINATED_FOR_HPV, TREATED_FOR_BCC)
 CAUSES_OF_DEATH = ('other_causes', models.INVASIVE_CANCER_STATE_NAME, models.INVASIVE_CANCER_WITH_HPV_STATE_NAME)
 CAUSES_OF_DISABILITY = (models.INVASIVE_CANCER_STATE_NAME, models.INVASIVE_CANCER_WITH_HPV_STATE_NAME)
 
@@ -79,7 +81,8 @@ TEMPLATE_FIELD_MAP = {
     'DISEASE_TRANSITION': models.CERVICAL_CANCER_MODEL_TRANSITIONS,
     'SCREENING_TRANSITION': models.SCREENING_MODEL_TRANSITIONS,
     'EVENT': EVENTS,
-    'VAX_STATE': models.VAX_STATES
+    'VAX_STATE': models.VAX_STATES,
+    'TREAT_STATE': models.TREATMENT_STATES
 }
 
 
