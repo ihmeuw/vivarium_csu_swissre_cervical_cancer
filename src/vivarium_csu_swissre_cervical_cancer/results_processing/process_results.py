@@ -27,12 +27,13 @@ def make_measure_data(data):
     measure_data = MeasureData(
         population=get_population_data(data),
         person_time=get_measure_data(data, 'person_time'),
-        ylls=get_by_cause_measure_data(data, 'ylls', True, True),
-        ylds=get_by_cause_measure_data(data, 'ylds', True, True),
-        deaths=get_by_cause_measure_data(data, 'deaths', True, True),
-        disease_state_person_time=get_state_person_time_measure_data(data, 'disease_state_person_time', True, True),
+        ylls=get_by_cause_measure_data(data, 'ylls', True, True, True),
+        ylds=get_by_cause_measure_data(data, 'ylds', True, True, True),
+        deaths=get_by_cause_measure_data(data, 'deaths', True, True, True),
+        disease_state_person_time=get_state_person_time_measure_data(data, 'disease_state_person_time',
+                                                                     True, True, True),
         screening_state_person_time=get_state_person_time_measure_data(data, 'screening_state_person_time'),
-        disease_transition_count=get_transition_count_measure_data(data, 'disease_transition_count', True, True),
+        disease_transition_count=get_transition_count_measure_data(data, 'disease_transition_count', True, True, True),
         screening_transition_count=get_transition_count_measure_data(data, 'screening_transition_count'),
         event_count=get_measure_data(data, 'event_count'),
     )
@@ -124,7 +125,10 @@ def sort_data(data):
     return data.reset_index(drop=True)
 
 
-def split_processing_column(data, has_screening_stratification=False, has_vax_stratification=False):
+def split_processing_column(data, has_screening_stratification=False, has_vax_stratification=False,
+                            has_treatment_stratification=False):
+    if has_treatment_stratification:
+        data['process'], data['treatment_state'] = data.process.str.split('_treatment_state_').str
     if has_vax_stratification:
         data['process'], data['vaccination_state'] = data.process.str.split('_vaccination_state_').str
     if has_screening_stratification:
@@ -143,26 +147,34 @@ def get_population_data(data):
     return sort_data(total_pop)
 
 
-def get_measure_data(data, measure, has_screening_stratification=False, has_vax_stratification=False):
+def get_measure_data(data, measure, has_screening_stratification=False, has_vax_stratification=False,
+                     has_treatment_stratification=False):
     data = pivot_data(data[results.RESULT_COLUMNS(measure) + GROUPBY_COLUMNS])
-    data = split_processing_column(data, has_screening_stratification, has_vax_stratification)
+    data = split_processing_column(data, has_screening_stratification, has_vax_stratification,
+                                   has_treatment_stratification)
     return sort_data(data)
 
 
-def get_by_cause_measure_data(data, measure, has_screening_stratification=False, has_vax_stratification=False):
-    data = get_measure_data(data, measure, has_screening_stratification, has_vax_stratification)
+def get_by_cause_measure_data(data, measure, has_screening_stratification=False, has_vax_stratification=False,
+                              has_treatment_stratification=False):
+    data = get_measure_data(data, measure, has_screening_stratification, has_vax_stratification,
+                            has_treatment_stratification)
     data['measure'], data['cause'] = data.measure.str.split('_due_to_').str
     return sort_data(data)
 
 
-def get_state_person_time_measure_data(data, measure, has_screening_stratification=False, has_vax_stratification=False):
-    data = get_measure_data(data, measure, has_screening_stratification, has_vax_stratification)
+def get_state_person_time_measure_data(data, measure, has_screening_stratification=False, has_vax_stratification=False,
+                                       has_treatment_stratification=False):
+    data = get_measure_data(data, measure, has_screening_stratification, has_vax_stratification,
+                            has_treatment_stratification)
     data['measure'], data['cause'] = 'state_person_time', data.measure.str.split('_person_time').str[0]
     return sort_data(data)
 
 
-def get_transition_count_measure_data(data, measure, has_screening_stratification=False, has_vax_stratification=False):
+def get_transition_count_measure_data(data, measure, has_screening_stratification=False, has_vax_stratification=False,
+                                      has_treatment_stratification=False):
     # Oops, edge case.
     data = data.drop(columns=[c for c in data.columns if 'event_count' in c and '2041' in c])
-    data = get_measure_data(data, measure, has_screening_stratification, has_vax_stratification)
+    data = get_measure_data(data, measure, has_screening_stratification, has_vax_stratification,
+                            has_treatment_stratification)
     return sort_data(data)

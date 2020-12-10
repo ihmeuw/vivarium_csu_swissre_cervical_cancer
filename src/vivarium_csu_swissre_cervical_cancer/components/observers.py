@@ -62,6 +62,8 @@ class ResultsStratifier:
             columns_required.append(models.SCREENING_RESULT_MODEL_NAME)
         if self.has_vaccination_state:
             columns_required.append(data_values.VACCINATION_DATE_COLUMN_NAME)
+        if self.has_treatment_state:
+            columns_required.append(data_values.TREATMENT_DATE_COLUMN_NAME)
 
         self.population_view = builder.population.get_view(columns_required)
         self.pipeline_values = {pipeline: None for pipeline in self.pipelines}
@@ -87,6 +89,11 @@ class ResultsStratifier:
             # Update vaccination state
             self.population_values.loc[event.index, data_values.VACCINATION_DATE_COLUMN_NAME] = (
                 self.population_view.get(event.index).loc[event.index, data_values.VACCINATION_DATE_COLUMN_NAME]
+            )
+        if self.has_treatment_state:
+            # Update treatment state
+            self.population_values.loc[event.index, data_values.TREATMENT_DATE_COLUMN_NAME] = (
+                self.population_view.get(event.index).loc[event.index, data_values.TREATMENT_DATE_COLUMN_NAME]
             )
 
     def get_all_stratifications(self) -> List[Tuple[Dict[str, str], ...]]:
@@ -154,6 +161,8 @@ class ResultsStratifier:
         stratification_group = self.stratification_groups.loc[pop.index]
         stratifications = self.get_all_stratifications()
         for stratification in stratifications:
+            # FIXME: Find a cleaner way of constructing these group strings
+            # s ~v t
             if by_screening and not by_vaccination and by_treatment:
                 screening_result = self.population_view.get(pop.index)[models.SCREENING_RESULT_MODEL_NAME]
                 treatment_state = ~(
@@ -171,6 +180,7 @@ class ResultsStratifier:
                                                    & (treatment_state == treated_state)]
                         yield (f'{stratification_key}_screening_result_{screening_state_name}_{treat_label}',
                                ), pop_in_group
+            # s ~v ~t
             elif by_screening and not by_vaccination and not by_treatment:
                 screening_result = self.population_view.get(pop.index)[models.SCREENING_RESULT_MODEL_NAME]
                 for screening_state_name in models.SCREENING_MODEL_STATES:
@@ -181,6 +191,7 @@ class ResultsStratifier:
                         pop_in_group = pop.loc[(stratification_group == stratification_key)
                                                & (screening_result == screening_state_name)]
                     yield (f'{stratification_key}_screening_result_{screening_state_name}',), pop_in_group
+            # s v t
             elif by_screening and by_vaccination and by_treatment:
                 screening_result = self.population_view.get(pop.index)[models.SCREENING_RESULT_MODEL_NAME]
                 vaccination_state = ~(
@@ -204,6 +215,7 @@ class ResultsStratifier:
                                                        & (treatment_state == treated_state)]
                             yield (f'{stratification_key}_screening_result_{screening_state_name}_{vax_label}'
                                    f'_{treat_label}',), pop_in_group
+            # s v ~t
             elif by_screening and by_vaccination and not by_treatment:
                 screening_result = self.population_view.get(pop.index)[models.SCREENING_RESULT_MODEL_NAME]
                 vaccination_state = ~(
@@ -221,23 +233,26 @@ class ResultsStratifier:
                                                    & (vaccination_state == vax_state)]
                         yield (f'{stratification_key}_screening_result_{screening_state_name}_{vax_label}',
                                ), pop_in_group
+            # ~s v t
             elif not by_screening and by_vaccination and by_treatment:
                 vaccination_state = ~(
                     self.population_view.get(pop.index)[data_values.VACCINATION_DATE_COLUMN_NAME].isna())
                 treatment_state = ~(self.population_view.get(pop.index)[data_values.TREATMENT_DATE_COLUMN_NAME].isna())
                 for vax_state in [True, False]:
-                    stratification_key = self.get_stratification_key(stratification)
-                    vax_label = "vaccination_state_"
-                    vax_label += models.VACCINATED_STATE_NAME if vax_state else models.NOT_VACCINATED_STATE_NAME
-                    treat_label = "treatment_state_"
-                    treat_label += models.TREATED_STATE_NAME if treated_state else models.NOT_TREATED_STATE_NAME
-                    if pop.empty:
-                        pop_in_group = pop
-                    else:
-                        pop_in_group = pop.loc[(stratification_group == stratification_key)
-                                               & (vaccination_state == vax_state)
-                                               & (treatment_state == treated_state)]
-                    yield (f'{stratification_key}_{vax_label}_{treat_label}',), pop_in_group
+                    for treated_state in [True, False]:
+                        stratification_key = self.get_stratification_key(stratification)
+                        vax_label = "vaccination_state_"
+                        vax_label += models.VACCINATED_STATE_NAME if vax_state else models.NOT_VACCINATED_STATE_NAME
+                        treat_label = "treatment_state_"
+                        treat_label += models.TREATED_STATE_NAME if treated_state else models.NOT_TREATED_STATE_NAME
+                        if pop.empty:
+                            pop_in_group = pop
+                        else:
+                            pop_in_group = pop.loc[(stratification_group == stratification_key)
+                                                   & (vaccination_state == vax_state)
+                                                   & (treatment_state == treated_state)]
+                        yield (f'{stratification_key}_{vax_label}_{treat_label}',), pop_in_group
+            # ~s v ~t
             elif not by_screening and by_vaccination and not by_treatment:
                 vaccination_state = ~(
                     self.population_view.get(pop.index)[data_values.VACCINATION_DATE_COLUMN_NAME].isna())
@@ -251,6 +266,19 @@ class ResultsStratifier:
                         pop_in_group = pop.loc[(stratification_group == stratification_key)
                                                & (vaccination_state == vax_state)]
                     yield (f'{stratification_key}_{vax_label}',), pop_in_group
+            # ~s ~v t
+            elif not by_screening and not by_vaccination and by_treatment:
+                treatment_state = ~(self.population_view.get(pop.index)[data_values.TREATMENT_DATE_COLUMN_NAME].isna())
+                for treated_state in [True, False]:
+                    stratification_key = self.get_stratification_key(stratification)
+                    treat_label = "treatment_state_"
+                    treat_label += models.TREATED_STATE_NAME if treated_state else models.NOT_TREATED_STATE_NAME
+                    if pop.empty:
+                        pop_in_group = pop
+                    else:
+                        pop_in_group = pop.loc[(stratification_group == stratification_key)
+                                               & (treatment_state == treated_state)]
+                    yield (f'{stratification_key}_{treat_label}',), pop_in_group
             else:
                 stratification_key = self.get_stratification_key(stratification)
                 if pop.empty:
@@ -287,7 +315,7 @@ class MortalityObserver(MortalityObserver_):
 
     def __init__(self):
         super().__init__()
-        self.stratifier = ResultsStratifier(self.name, True, True)
+        self.stratifier = ResultsStratifier(self.name, True, True, True)
 
     @property
     def sub_components(self) -> List[ResultsStratifier]:
@@ -328,7 +356,7 @@ class DisabilityObserver(DisabilityObserver_):
 
     def __init__(self):
         super().__init__()
-        self.stratifier = ResultsStratifier(self.name, True, True)
+        self.stratifier = ResultsStratifier(self.name, True, True, True)
 
     @property
     def sub_components(self) -> List[ResultsStratifier]:
@@ -367,7 +395,7 @@ class StateMachineObserver:
             'metrics': {state_machine: StateMachineObserver.configuration_defaults['metrics']['state_machine']}
         }
         self.is_disease = is_disease == 'True'
-        self.stratifier = ResultsStratifier(self.name, self.is_disease, self.is_disease)
+        self.stratifier = ResultsStratifier(self.name, self.is_disease, self.is_disease, self.is_disease)
 
     @property
     def name(self) -> str:
