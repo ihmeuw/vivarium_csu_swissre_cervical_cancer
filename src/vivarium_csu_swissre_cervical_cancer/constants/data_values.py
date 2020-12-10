@@ -139,3 +139,7 @@ VAX_SCALE_UP_GOAL_COVERAGE = 0.25
 VAX_START_COVERAGE = 0.1  # This is implemented as the exposure of the risk effect of no vaccination in model spec
 VAX_SCALE_UP_DIFFERENCE = VAX_SCALE_UP_GOAL_COVERAGE - VAX_START_COVERAGE
 
+#############################
+# Treatment Model Constants #
+#############################
+TREATMENT_DATE_COLUMN_NAME = "treatment_date"
