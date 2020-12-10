@@ -19,6 +19,7 @@ components:
         - StateMachineObserver('screening_result', 'False')
         - ScreeningObserver()
         - VaccinationObserver()
+        - TreatmentObserver()
         - Intervention()
         - HpvVaccineExposure('risk_factor.no_hpv_vaccination')
         - TreatmentExposure('risk_factor.no_bcc_treatment')
