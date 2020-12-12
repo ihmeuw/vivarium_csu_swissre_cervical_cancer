@@ -5,12 +5,10 @@ import pandas as pd
 from vivarium_csu_swissre_cervical_cancer import models, data_values, scenarios
 from vivarium_csu_swissre_cervical_cancer.utilities import get_normal_dist_random_variable
 
-
 if typing.TYPE_CHECKING:
     from vivarium.framework.engine import Builder
     from vivarium.framework.event import Event
     from vivarium.framework.population import SimulantData
-
 
 # Columns
 AGE = 'age'
@@ -140,8 +138,8 @@ class ScreeningAlgorithm:
         next_screening_date.loc[has_symptoms] = self.clock()
 
         screening_scheduled = ((next_screening_date <= self.clock())
-                               & (age >= data_values.FIRST_SCREENING_AGE)
-                               & (age <= data_values.LAST_SCREENING_AGE))
+                               & (((age >= data_values.FIRST_SCREENING_AGE) & (age <= data_values.LAST_SCREENING_AGE))
+                                  | has_symptoms))
 
         # Get probability of attending the next screening for scheduled simulants
         p_attends_screening = self.probability_attending_screening(pop.index)
@@ -201,11 +199,10 @@ class ScreeningAlgorithm:
         # return pop.loc[:, data_values.ATTENDED_LAST_SCREENING].apply(lambda x: conditional_probabilities[x])
         return prob_attending_screening
 
-
     def _do_screening(self, pop: pd.Series) -> pd.Series:
         """Perform screening for all simulants who attended their screening"""
         screened = ((data_values.FIRST_SCREENING_AGE <= pop.loc[:, AGE])
-                   & (pop.loc[:, AGE] < data_values.LAST_SCREENING_AGE))
+                    & (pop.loc[:, AGE] < data_values.LAST_SCREENING_AGE))
         in_remission = pop.loc[:, models.CERVICAL_CANCER_MODEL_NAME] == models.RECOVERED_STATE_NAME
         no_cancer = pop.loc[:, models.SCREENING_RESULT_MODEL_NAME].isin([
             models.NEGATIVE_STATE_NAME,
@@ -216,7 +213,8 @@ class ScreeningAlgorithm:
                            & (pop.loc[:, AGE] < data_values.MID_SCREENING_AGE))
         cotest_eligible = ((data_values.MID_SCREENING_AGE <= pop.loc[:, AGE])
                            & (pop.loc[:, AGE] < data_values.LAST_SCREENING_AGE))
-        # TODO: check/ensure these are mutually exclusive groups
+        
+        # These should be mutually exclusive groups
         cotesters = no_cancer & cotest_eligible & screened & ~has_symptoms
         screened_remission = screened & in_remission & ~cotesters
         cytologists = (~no_cancer | twentysomething) & (~in_remission & screened) & ~has_symptoms

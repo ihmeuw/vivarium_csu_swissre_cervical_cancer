@@ -69,9 +69,9 @@ class Intervention:
         effect: pd.Series = pd.Series(0.0, idx)
         if self.scenario == scenarios.SCENARIOS.alternative:
             if data_values.SCALE_UP_START_DT <= self.clock() < data_values.SCALE_UP_END_DT:
-                effect = get_effect(self.clock(), 0.3)
+                effect = get_effect(self.clock(), data_values.VAX_SCALE_UP_DIFFERENCE)
             elif self.clock() >= data_values.SCALE_UP_END_DT:
-                effect = get_effect(data_values.SCALE_UP_END_DT, 0.3)
+                effect = get_effect(data_values.SCALE_UP_END_DT, data_values.VAX_SCALE_UP_DIFFERENCE)
 
         return target - effect
 
