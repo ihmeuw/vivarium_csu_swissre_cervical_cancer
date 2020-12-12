@@ -157,7 +157,7 @@ class ResultsStratifier:
         """
         by_screening = self.has_screening_state if by_screening is None else by_screening
         by_vaccination = self.has_vaccination_state if by_vaccination is None else by_vaccination
-        by_treatment = self.has_vaccination_state if by_treatment is None else by_treatment
+        by_treatment = self.has_treatment_state if by_treatment is None else by_treatment
         stratification_group = self.stratification_groups.loc[pop.index]
         stratifications = self.get_all_stratifications()
         for stratification in stratifications:
@@ -338,7 +338,7 @@ class MortalityObserver(MortalityObserver_):
                 measure_data = self.stratifier.update_labels(measure_data, labels)
                 metrics.update(measure_data)
 
-        for labels, pop_in_group in self.stratifier.group(pop, False, False):
+        for labels, pop_in_group in self.stratifier.group(pop, False, False, False):
             base_args = (pop_in_group, self.config.to_dict(), self.start_time, self.clock(), self.age_bins)
             measure_data = self.stratifier.update_labels(get_person_time(*base_args), labels)
             metrics.update(measure_data)

@@ -108,3 +108,8 @@ configuration:
             by_age: False
             by_sex: False
             by_year: True
+        treatment:
+            by_age: False
+            by_sex: False
+            by_year: True
+
