@@ -315,7 +315,8 @@ class MortalityObserver(MortalityObserver_):
 
     def __init__(self):
         super().__init__()
-        self.stratifier = ResultsStratifier(self.name, True, True, True)
+        # self.stratifier = ResultsStratifier(self.name, True, True, True)
+        self.stratifier = ResultsStratifier(self.name, False, False, True)
 
     @property
     def sub_components(self) -> List[ResultsStratifier]:
@@ -356,7 +357,7 @@ class DisabilityObserver(DisabilityObserver_):
 
     def __init__(self):
         super().__init__()
-        self.stratifier = ResultsStratifier(self.name, True, True, True)
+        self.stratifier = ResultsStratifier(self.name, False, False, True)
 
     @property
     def sub_components(self) -> List[ResultsStratifier]:
@@ -395,7 +396,8 @@ class StateMachineObserver:
             'metrics': {state_machine: StateMachineObserver.configuration_defaults['metrics']['state_machine']}
         }
         self.is_disease = is_disease == 'True'
-        self.stratifier = ResultsStratifier(self.name, self.is_disease, self.is_disease, self.is_disease)
+        # self.stratifier = ResultsStratifier(self.name, self.is_disease, self.is_disease, self.is_disease)
+        self.stratifier = ResultsStratifier(self.name, False, False, self.is_disease)
 
     @property
     def name(self) -> str:

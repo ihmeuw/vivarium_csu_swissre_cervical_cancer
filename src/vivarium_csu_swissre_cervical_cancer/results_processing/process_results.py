@@ -27,13 +27,13 @@ def make_measure_data(data):
     measure_data = MeasureData(
         population=get_population_data(data),
         person_time=get_measure_data(data, 'person_time'),
-        ylls=get_by_cause_measure_data(data, 'ylls', True, True, True),
-        ylds=get_by_cause_measure_data(data, 'ylds', True, True, True),
-        deaths=get_by_cause_measure_data(data, 'deaths', True, True, True),
+        ylls=get_by_cause_measure_data(data, 'ylls', False, False, True),
+        ylds=get_by_cause_measure_data(data, 'ylds', False, False, True),
+        deaths=get_by_cause_measure_data(data, 'deaths', False, False, True),
         disease_state_person_time=get_state_person_time_measure_data(data, 'disease_state_person_time',
-                                                                     True, True, True),
+                                                                     False, False, True),
         screening_state_person_time=get_state_person_time_measure_data(data, 'screening_state_person_time'),
-        disease_transition_count=get_transition_count_measure_data(data, 'disease_transition_count', True, True, True),
+        disease_transition_count=get_transition_count_measure_data(data, 'disease_transition_count', False, False, True),
         screening_transition_count=get_transition_count_measure_data(data, 'screening_transition_count'),
         event_count=get_measure_data(data, 'event_count'),
     )
