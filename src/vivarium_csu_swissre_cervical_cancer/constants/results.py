@@ -32,18 +32,28 @@ THROWAWAY_COLUMNS = [f'{state}_event_count' for state in models.STATES]
 
 TOTAL_POPULATION_COLUMN_TEMPLATE = 'total_population_{POP_STATE}'
 PERSON_TIME_COLUMN_TEMPLATE = 'person_time_in_{YEAR}_age_cohort_{AGE_COHORT}'
+# DEATH_COLUMN_TEMPLATE = ('death_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_age_cohort_{AGE_COHORT}'
+#                          '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}_treatment_state_{TREAT_STATE}')
+# YLLS_COLUMN_TEMPLATE = ('ylls_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_age_cohort_{AGE_COHORT}'
+#                         '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}_treatment_state_{TREAT_STATE}')
+# YLDS_COLUMN_TEMPLATE = ('ylds_due_to_{CAUSE_OF_DISABILITY}_in_{YEAR}_age_cohort_{AGE_COHORT}'
+#                         '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}_treatment_state_{TREAT_STATE}')
 DEATH_COLUMN_TEMPLATE = ('death_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_age_cohort_{AGE_COHORT}'
-                         '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}_treatment_state_{TREAT_STATE}')
+                         '_treatment_state_{TREAT_STATE}')
 YLLS_COLUMN_TEMPLATE = ('ylls_due_to_{CAUSE_OF_DEATH}_in_{YEAR}_age_cohort_{AGE_COHORT}'
-                        '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}_treatment_state_{TREAT_STATE}')
+                        '_treatment_state_{TREAT_STATE}')
 YLDS_COLUMN_TEMPLATE = ('ylds_due_to_{CAUSE_OF_DISABILITY}_in_{YEAR}_age_cohort_{AGE_COHORT}'
-                        '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}_treatment_state_{TREAT_STATE}')
+                        '_treatment_state_{TREAT_STATE}')
+# DISEASE_STATE_PERSON_TIME_COLUMN_TEMPLATE = ('{DISEASE_STATE}_person_time_in_{YEAR}_age_cohort_'
+#                                              '{AGE_COHORT}_screening_result_{SCREENING_STATE}_'
+#                                              'vaccination_state_{VAX_STATE}_treatment_state_{TREAT_STATE}')
 DISEASE_STATE_PERSON_TIME_COLUMN_TEMPLATE = ('{DISEASE_STATE}_person_time_in_{YEAR}_age_cohort_'
-                                             '{AGE_COHORT}_screening_result_{SCREENING_STATE}_'
-                                             'vaccination_state_{VAX_STATE}_treatment_state_{TREAT_STATE}')
+                                             '{AGE_COHORT}_treatment_state_{TREAT_STATE}')
 SCREENING_STATE_PERSON_TIME_COLUMN_TEMPLATE = '{SCREENING_STATE}_person_time_in_{YEAR}_age_cohort_{AGE_COHORT}'
+# DISEASE_TRANSITION_COUNT_COLUMN_TEMPLATE = ('{DISEASE_TRANSITION}_event_count_in_{YEAR}_age_cohort_{AGE_COHORT}'
+#                                             '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}_treatment_state_{TREAT_STATE}')
 DISEASE_TRANSITION_COUNT_COLUMN_TEMPLATE = ('{DISEASE_TRANSITION}_event_count_in_{YEAR}_age_cohort_{AGE_COHORT}'
-                                            '_screening_result_{SCREENING_STATE}_vaccination_state_{VAX_STATE}_treatment_state_{TREAT_STATE}')
+                                            '_treatment_state_{TREAT_STATE}')
 SCREENING_TRANSITION_COUNT_COLUMN_TEMPLATE = '{SCREENING_TRANSITION}_event_count_in_{YEAR}_age_cohort_{AGE_COHORT}'
 EVENT_COUNT_COLUMN_TEMPLATE = '{EVENT}_in_{YEAR}_age_cohort_{AGE_COHORT}'
 
