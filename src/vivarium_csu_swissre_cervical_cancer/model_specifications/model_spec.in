@@ -7,6 +7,7 @@ components:
             - RiskEffect('risk_factor.no_hpv_vaccination', 'sequela.high_risk_hpv.incidence_rate')
             - RiskEffect('risk_factor.no_hpv_vaccination', 'sequela.benign_cervical_cancer_to_benign_cervical_cancer_with_hpv.transition_rate')
             - RiskEffect('risk_factor.no_hpv_vaccination', 'sequela.invasive_cervical_cancer_to_invasive_cervical_cancer_with_hpv.transition_rate')
+            - RiskEffect('risk_factor.no_hpv_vaccination', 'sequela.benign_cervical_cancer.incidence_rate')
             - RiskEffect('risk_factor.no_bcc_treatment', 'sequela.benign_cervical_cancer_to_invasive_cervical_cancer.transition_rate')
             - RiskEffect('risk_factor.no_bcc_treatment', 'sequela.benign_cervical_cancer_with_hpv_to_invasive_cervical_cancer_with_hpv.transition_rate')
 
@@ -67,6 +68,10 @@ configuration:
         transition_rate:
             mean: 4.71
             se: 0.94
+    effect_of_no_hpv_vaccination_on_benign_cervical_cancer:
+        incidence_rate:
+            mean: 1.77
+            se: 0.26
 
     no_bcc_treatment:
         exposure: 0.8
