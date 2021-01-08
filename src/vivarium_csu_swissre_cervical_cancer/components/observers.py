@@ -315,7 +315,7 @@ class MortalityObserver(MortalityObserver_):
 
     def __init__(self):
         super().__init__()
-        self.stratifier = ResultsStratifier(self.name, True, True, True)
+        self.stratifier = ResultsStratifier(self.name, False, False, False)
 
     @property
     def sub_components(self) -> List[ResultsStratifier]:
@@ -356,7 +356,7 @@ class DisabilityObserver(DisabilityObserver_):
 
     def __init__(self):
         super().__init__()
-        self.stratifier = ResultsStratifier(self.name, True, True, True)
+        self.stratifier = ResultsStratifier(self.name, False, False, False)
 
     @property
     def sub_components(self) -> List[ResultsStratifier]:
