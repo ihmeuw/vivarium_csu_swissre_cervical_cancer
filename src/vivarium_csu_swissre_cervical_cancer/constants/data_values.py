@@ -62,11 +62,9 @@ LAST_SCREENING_AGE = 65
 
 
 class __Screening(NamedTuple):
-    # TODO: need stddev for COTEST_CC_SENSITIVITY
     COTEST_CC_SENSITIVITY: TruncnormDist = TruncnormDist('cotest_cc_sensitivity', 0.591, 0.0)
     COTEST_CC_SPECIFICITY: TruncnormDist = TruncnormDist('cotest_cc_specificity', 1.0, 0.0)
 
-    # TODO: need stddev for COTEST_HPV_SENSITIVITY, info for COTEST_HPV_SPECIFICITY (assuming 100% for now)
     COTEST_HPV_SENSITIVITY: TruncnormDist = TruncnormDist('cotest_hpv_sensitivity', 0.767, 0.0)
     COTEST_HPV_SPECIFICITY: TruncnormDist = TruncnormDist('cotest_hpv_specificity', 0.941, 0.0)
 
@@ -86,7 +84,6 @@ class __Screening(NamedTuple):
                                                        PROBABILITY_ATTENDING_SCREENING_END_MEAN,
                                                        PROBABILITY_ATTENDING_SCREENING_END_STDDEV,
                                                        key=PROBABILITY_ATTENDING_SCREENING_KEY)
-    # TODO: update ATTENDED_PREVIOUS_SCREENING_MULTIPLIER for research team's decision on distribution:
     ATTENDED_PREVIOUS_SCREENING_MULTIPLIER: TruncnormDist = TruncnormDist('attended_prev_screening_multiplier',
                                                                           ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_MEAN,
                                                                           ATTENDED_PREVIOUS_SCREENING_MULTIPLIER_STDDEV,
@@ -96,15 +93,6 @@ class __Screening(NamedTuple):
                                                                           )
     HAS_SYMPTOMS_SENSITIVITY: TruncnormDist = TruncnormDist('has_symptoms_sensitivity', 1.0, 0.0)
     HAS_SYMPTOMS_SPECIFICITY: TruncnormDist = TruncnormDist('has_symptoms_specificity', 1.0, 0.0)
-
-    # START_ATTENDED_PREV_ATTENDANCE: TruncnormDist = TruncnormDist('start_attendance_attended_prev', 0.397, 0.00397,
-    #                                                               key=PROBABILITY_ATTENDING_SCREENING_KEY)
-    # START_NOT_ATTENDED_PREV_ATTENDANCE: TruncnormDist = TruncnormDist('start_attendance_not_attended_prev', 0.258,
-    #                                                                   0.00258, key=PROBABILITY_ATTENDING_SCREENING_KEY)
-    # END_ATTENDED_PREV_ATTENDANCE: TruncnormDist = TruncnormDist('end_attendance_attended_prev', 0.782, 0.00782,
-    #                                                             key=PROBABILITY_ATTENDING_SCREENING_KEY)
-    # END_NOT_ATTENDED_PREV_ATTENDANCE: TruncnormDist = TruncnormDist('end_attendance_not_attended_prev', 0.655, 0.00655,
-    #                                                                 key=PROBABILITY_ATTENDING_SCREENING_KEY)
 
     @property
     def name(self):
