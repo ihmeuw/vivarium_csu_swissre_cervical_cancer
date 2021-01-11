@@ -345,45 +345,32 @@ def _transform_raw_data(location: str, data_path: Path, is_log_data: bool) -> pd
 
 def _transform_raw_data_preliminary(data_path: Path, is_log_data: bool = False) -> pd.DataFrame:
     """Transforms data to a form with draws in the index and raw locations as columns"""
-    raw_data: pd.DataFrame = pd.read_hdf(data_path)
-    age_bins = gbd.get_age_bins().set_index('age_group_id')
-    locations = gbd.get_location_ids().set_index('location_id')
+    raw_data: pd.DataFrame = pd.read_csv(data_path)
+    age_bins = gbd.get_age_bins().set_index('age_group_name')
 
-    # Transform raw data from log space to linear space
-    log_value_column = raw_data.columns[0]
-    raw_data['value'] = np.exp(raw_data[log_value_column]) if is_log_data else raw_data[log_value_column]
-
+    processed_data = raw_data[raw_data['location_id'].isin(data_keys.SWISSRE_LOCATION_WEIGHTS)]
     processed_data = (
-        raw_data
-            .reset_index()
-            # Set index to match age_bins and join
-            .set_index('age_group_id')
-            .join(age_bins, how='left')
-            .reset_index()
-            # Set index to match location and join
-            .set_index('location_id')
-            .join(locations, how='left')
-            .reset_index()
-            .rename(columns={
+        processed_data
+        .set_index('age_group_id')
+        .join(age_bins, how='left')
+        .reset_index()
+        .rename(columns={
             'age_group_years_start': 'age_start',
             'age_group_years_end': 'age_end',
             'year_id': 'year_start',
-            'location_name': 'location',
+            'sex_id': 'sex',
+            'location_id': 'location',
         })
     )
 
-    # Filter locations down to the regions covered by SwissRE
-    swissre_locations_mask = processed_data['location'].isin(data_keys.SWISSRE_LOCATION_WEIGHTS)
-    processed_data = processed_data[swissre_locations_mask]
+    processed_data = processed_data[(processed_data['age_start'] >= data_values.YOUNGEST_SIMULANT_AGE)
+                                    & (processed_data['age_end'] >= data_values.YOUNGEST_SIMULANT_AGE)]
 
-    # Add year end column and create sex column with strings rather than ids
+    # Add year end column
     processed_data['year_end'] = processed_data['year_start'] + 1
-    processed_data['sex'] = processed_data['sex_id'].apply(lambda x: 'Male' if x == 1 else 'Female')
 
     # Drop unneeded columns
-    processed_data = processed_data.drop(
-        ['age_group_id', 'age_group_name', 'location_id', log_value_column, 'sex_id'], axis=1
-    )
+    processed_data = processed_data[ARTIFACT_INDEX_COLUMNS + ['draw', 'noised_forecast']]
 
     # Make draw column numeric
     processed_data['draw'] = pd.to_numeric(processed_data['draw'])
